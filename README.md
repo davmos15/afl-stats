@@ -1,14 +1,16 @@
 # AFL Stats Search
 
+**[Try it live](https://davmos15.github.io/afl-stats/)**
+
 Natural language search for AFL statistics. Ask questions in plain English and get instant answers with data tables, charts, and R code.
 
-Powered by live data from [Squiggle](https://squiggle.com.au) and [AFL Tables](https://afltables.com), with AI from your choice of Google Gemini, OpenAI, or Anthropic Claude.
+Powered by live data from [Squiggle](https://squiggle.com.au) and [AFL Tables](https://afltables.com), with AI from your choice of Google Gemini or OpenAI.
 
 ## Features
 
 - **Natural language queries** - "Who kicked the most goals in 2025?", "Last 5 Grand Final winners"
 - **Live data** - current season standings, match results, and player stats via Squiggle API and AFL Tables
-- **Multiple AI providers** - Google Gemini (free), OpenAI, or Anthropic Claude
+- **Multiple AI providers** - Google Gemini (free) or OpenAI
 - **Data tables + charts** - toggle between table, bar chart, and column chart views
 - **R code** - every answer includes fitzRoy R code to reproduce the analysis
 - **Dark mode** - automatic or manual light/dark theme

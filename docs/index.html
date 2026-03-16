@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFL Stats Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+                    colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' } }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('afl_theme') === 'dark' || (!localStorage.getItem('afl_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .dropdown-enter { animation: dropIn 0.15s ease-out; }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .usage-bar { transition: width 0.4s ease-out; }
+        .view-btn { color: #9ca3af; }
+        .dark .view-btn { color: #6b7280; }
+        .view-btn:hover { background: #f3f4f6; color: #6b7280; }
+        .dark .view-btn:hover { background: rgba(255,255,255,0.05); color: #9ca3af; }
+        .active-view { background: #eff6ff !important; color: #2563eb !important; font-weight: 500; }
+        .dark .active-view { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; }
+    </style>
+</head>
+<body class="bg-[#f8f9fb] dark:bg-[#0c0d12] min-h-screen font-sans transition-colors duration-200">
+
+    <div class="max-w-2xl mx-auto px-5 pt-14 pb-12">
+
+        <!-- Top bar -->
+        <div class="flex justify-end mb-6">
+            <button onclick="toggleTheme()" class="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-200/50 dark:hover:bg-white/5 transition-colors" title="Toggle dark mode">
+                <svg id="icon-sun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg id="icon-moon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">AFL Stats Search</h1>
+            <p class="text-gray-400 dark:text-gray-500 mt-1.5 text-sm">Natural language search for AFL statistics</p>
+        </div>
+
+        <!-- Search -->
+        <form onsubmit="handleSearch(event)" id="search-form" class="mb-4">
+            <div class="relative">
+                <input type="text" id="query-input"
+                    class="w-full pl-4 pr-24 py-3.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl text-[15px] text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                    placeholder="Ask anything about AFL stats..."
+                    required autofocus>
+                <button type="submit" id="search-btn"
+                    class="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors">
+                    Search
+                </button>
+                <div id="search-spinner" class="hidden absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg items-center gap-2 justify-center" style="display:none">
+                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Searching
+                </div>
+            </div>
+        </form>
+
+        <!-- Sub-bar -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="relative">
+                <button onclick="toggleAIPanel()" id="ai-toggle"
+                    class="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <span class="w-1.5 h-1.5 rounded-full" id="ai-status-dot"></span>
+                    <span id="ai-status-label"></span>
+                    <span id="usage-badge" class="text-gray-300 dark:text-gray-600"></span>
+                    <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+
+                <!-- Dropdown -->
+                <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-lg dark:shadow-black/40 z-50 dropdown-enter">
+                    <div class="p-3 pb-0">
+                        <div class="grid grid-cols-2 gap-1.5 mb-3">
+                            <button onclick="selectProvider('gemini')" id="provider-btn-gemini"
+                                class="provider-btn px-2 py-2 text-xs rounded-lg border dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-medium">Gemini</div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-gemini"></div>
+                            </button>
+                            <button onclick="selectProvider('openai')" id="provider-btn-openai"
+                                class="provider-btn px-2 py-2 text-xs rounded-lg border dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-medium">OpenAI</div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-openai"></div>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input type="password" id="api-key-input"
+                                class="w-full pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-700/60 rounded-lg text-xs bg-gray-50 dark:bg-[#12131a] text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                                placeholder="Paste API key">
+                            <button onclick="toggleKeyVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 mb-3">
+                            <a id="signup-link" href="#" target="_blank" class="text-[10px] text-brand-600 hover:underline">Get a free key</a>
+                            <p class="text-[10px] text-gray-300 dark:text-gray-600">Key stays in your browser only</p>
+                        </div>
+                    </div>
+                    <!-- Usage -->
+                    <div class="border-t border-gray-100 dark:border-gray-700/40 p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Today's usage</span>
+                            <span id="reset-timer" class="text-[10px] text-gray-400 dark:text-gray-500"></span>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Requests</span>
+                                <span id="req-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                            </div>
+                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div id="req-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Tokens</span>
+                                <span id="tok-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                            </div>
+                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div id="tok-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <span id="tier-label" class="text-[10px] text-gray-300 dark:text-gray-600"></span>
+                            <button onclick="resetUsage()" class="text-[10px] text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 justify-end">
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Grand Final winners</button>
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Top goal kickers 2025</button>
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">2025 ladder</button>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+<script>
+// ── Theme ──
+function toggleTheme() {
+    var html = document.documentElement;
+    if (html.classList.contains('dark')) { html.classList.remove('dark'); localStorage.setItem('afl_theme','light'); }
+    else { html.classList.add('dark'); localStorage.setItem('afl_theme','dark'); }
+}
+
+// ── Close panel on outside click ──
+document.addEventListener('click', function(e) {
+    var panel = document.getElementById('ai-panel'), toggle = document.getElementById('ai-toggle');
+    if (!panel.contains(e.target) && !toggle.contains(e.target)) panel.classList.add('hidden');
+});
+
+// ── Provider config ──
+var PROVIDERS = {
+    gemini:  { name:'Google Gemini',   short:'Gemini',  color:'#4285F4', signup:'https://aistudio.google.com/apikey',    limits:{ requests:1500, tokens:1000000, resetTZ:'America/Los_Angeles', label:'Free tier \u00B7 resets midnight PT' }},
+    openai:  { name:'OpenAI (ChatGPT)',short:'ChatGPT', color:'#10A37F', signup:'https://platform.openai.com/api-keys', limits:{ requests:500,  tokens:200000,  resetTZ:'UTC',                 label:'Paid \u00B7 resets midnight UTC' }},
+};
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function getProvider() { return localStorage.getItem('afl_provider') || 'gemini'; }
+function getApiKey() { return localStorage.getItem('afl_key_'+getProvider()) || ''; }
+function getUsage(p) { var r = JSON.parse(localStorage.getItem('afl_usage_'+p)||'{}'); return r.date===todayStr() ? r : {queries:0,total_tokens:0,date:todayStr()}; }
+function saveUsage(p,u) { u.date=todayStr(); localStorage.setItem('afl_usage_'+p,JSON.stringify(u)); }
+function recordUsage(provider,tokens) { var u=getUsage(provider); u.queries+=1; u.total_tokens+=tokens||0; saveUsage(provider,u); updateUI(); }
+function formatTokens(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'k'; return n.toString(); }
+function getResetMs(tz) { var now=new Date(), parts={}; new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(now).forEach(function(p){parts[p.type]=p.value;}); return (86400-((parseInt(parts.hour)||0)*3600+(parseInt(parts.minute)||0)*60+(parseInt(parts.second)||0)))*1000; }
+function formatCountdown(ms) { var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000); return h>0?'Resets in '+h+'h '+m+'m':'Resets in '+m+'m'; }
+function barColor(pct) { return pct>90?'#ef4444':pct>70?'#f59e0b':'#3b82f6'; }
+
+function selectProvider(p) { localStorage.setItem('afl_provider',p); document.getElementById('api-key-input').value=localStorage.getItem('afl_key_'+p)||''; updateUI(); }
+function toggleAIPanel() { document.getElementById('ai-panel').classList.toggle('hidden'); }
+function toggleKeyVisibility() { var el=document.getElementById('api-key-input'); el.type=el.type==='password'?'text':'password'; }
+function resetUsage() { localStorage.removeItem('afl_usage_'+getProvider()); updateUI(); }
+function submitQuery(btn) { document.getElementById('query-input').value=btn.textContent.trim(); handleSearch(); }
+
+function updateUI() {
+    var cur=getProvider(), p=PROVIDERS[cur], hasKey=!!getApiKey(), usage=getUsage(cur), lim=p.limits;
+    document.getElementById('ai-status-dot').style.backgroundColor = hasKey ? p.color : '#6b7280';
+    document.getElementById('ai-status-label').textContent = p.short;
+    document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests+' today' : '';
+    ['gemini','openai'].forEach(function(id) {
+        var btn=document.getElementById('provider-btn-'+id), c=PROVIDERS[id].color;
+        if (id===cur) { btn.style.borderColor=c; btn.style.backgroundColor=c+'12'; btn.style.color=c; }
+        else { btn.style.borderColor=''; btn.style.backgroundColor=''; btn.style.color=''; }
+        var u=getUsage(id), uel=document.getElementById('provider-usage-'+id);
+        if(uel) uel.textContent = u.queries>0 ? u.queries+' today' : '';
+    });
+    document.getElementById('signup-link').href = p.signup;
+    document.getElementById('signup-link').textContent = 'Get a free '+p.short+' key';
+    var rPct=Math.min(100,(usage.queries/lim.requests)*100), tPct=Math.min(100,(usage.total_tokens/lim.tokens)*100);
+    document.getElementById('req-count').textContent = usage.queries+' / '+lim.requests.toLocaleString();
+    document.getElementById('req-bar').style.width = rPct+'%';
+    document.getElementById('req-bar').style.backgroundColor = barColor(rPct);
+    document.getElementById('tok-count').textContent = formatTokens(usage.total_tokens)+' / '+formatTokens(lim.tokens);
+    document.getElementById('tok-bar').style.width = tPct+'%';
+    document.getElementById('tok-bar').style.backgroundColor = barColor(tPct);
+    document.getElementById('reset-timer').textContent = formatCountdown(getResetMs(lim.resetTZ));
+    document.getElementById('tier-label').textContent = lim.label;
+}
+
+setInterval(function(){ var el=document.getElementById('reset-timer'); if(el) el.textContent=formatCountdown(getResetMs(PROVIDERS[getProvider()].limits.resetTZ)); }, 60000);
+document.getElementById('api-key-input').addEventListener('input', function(){ localStorage.setItem('afl_key_'+getProvider(), this.value.trim()); updateUI(); });
+updateUI();
+var _sk=getApiKey(); if(_sk) document.getElementById('api-key-input').value=_sk;
+
+// ── Squiggle API (live data) ──
+var SQUIGGLE = 'https://api.squiggle.com.au/';
+
+async function fetchSquiggle(endpoint, params) {
+    var url = new URL(SQUIGGLE);
+    url.searchParams.set('q', endpoint);
+    if (params) Object.keys(params).forEach(function(k){ url.searchParams.set(k, params[k]); });
+    try {
+        var r = await fetch(url);
+        if (!r.ok) return [];
+        var d = await r.json();
+        return d[endpoint] || [];
+    } catch(e) { return []; }
+}
+
+async function fetchLiveContext(query) {
+    var currentYear = new Date().getFullYear(), lower = query.toLowerCase();
+    var years = new Set();
+    for (var y = 2012; y <= currentYear; y++) { if (lower.includes(String(y))) years.add(y); }
+    if (['this year','this season','current','latest','now','today'].some(function(w){return lower.includes(w);})) years.add(currentYear);
+    if (lower.includes('last year') || lower.includes('last season')) years.add(currentYear-1);
+    if (years.size === 0) years.add(currentYear);
+
+    var wantsPlayers = ['goal','kick','mark','handball','disposal','tackle','player','who scored','who kicked','top scorer','brownlow','coleman','leading','most goals'].some(function(w){return lower.includes(w);});
+
+    var tasks = [], keys = [];
+    years.forEach(function(yr) {
+        keys.push('standings_'+yr); tasks.push(fetchSquiggle('standings',{year:yr}));
+        keys.push('games_'+yr);     tasks.push(fetchSquiggle('games',{year:yr}));
+    });
+    var raw = await Promise.all(tasks);
+    var results = {};
+    keys.forEach(function(k,i){ results[k] = raw[i]; });
+
+    var sections = [];
+    var sortedYears = Array.from(years).sort();
+    sortedYears.forEach(function(yr) {
+        var standings = results['standings_'+yr] || [];
+        if (standings.length) {
+            var slim = standings.map(function(s){ return {rank:s.rank, team:s.name, P:s.played, W:s.wins, L:s.losses, D:s.draws, pts:s.pts, pct:Math.round((s.percentage||0)*10)/10}; });
+            slim.sort(function(a,b){ return (a.rank||99)-(b.rank||99); });
+            sections.push('=== '+yr+' LADDER ===\n'+JSON.stringify(slim));
+        }
+        var games = results['games_'+yr] || [];
+        if (games.length) {
+            var completed = games.filter(function(g){ return g.complete===100; });
+            if (completed.length) {
+                completed.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+                var recent = completed.slice(0,10).map(function(g){
+                    return {round:g.round, label:g.is_final?'Final':'', home:g.hteam, home_score:g.hscore, away:g.ateam, away_score:g.ascore, winner:g.winner, date:String(g.date||'').slice(0,10)};
+                });
+                sections.push('=== '+yr+' RECENT RESULTS ===\n'+JSON.stringify(recent));
+                var finals = completed.filter(function(g){ return g.is_final; });
+                if (finals.length) {
+                    var gfRound = Math.max.apply(null, finals.map(function(g){return g.round||0;}));
+                    var gfGames = finals.filter(function(g){return g.round===gfRound;});
+                    if (gfGames.length) {
+                        var gf = gfGames[0];
+                        sections.push('=== '+yr+' GRAND FINAL ===\n'+gf.hteam+' '+gf.hscore+' vs '+gf.ateam+' '+gf.ascore+' - Winner: '+gf.winner+' (Date: '+String(gf.date||'').slice(0,10)+')');
+                    }
+                }
+            }
+        }
+        if (wantsPlayers && !sections.some(function(s){return s.includes('GOAL KICKERS');})) {
+            sections.push('(Player-level stats like goals/disposals require the self-hosted version with AFL Tables scraping. Answer using your training knowledge for player stats.)');
+        }
+    });
+    return sections.length ? sections.join('\n\n') : '(No live data available - answer from your own knowledge)';
+}
+
+// ── Build prompt ──
+function buildPrompt(query, liveData) {
+    return 'You are an AFL (Australian Football League) statistics expert with deep knowledge of players, teams, seasons, records, and history.\n\n' +
+        'You have access to LIVE DATA below AND your own extensive knowledge of AFL history. Use BOTH to give the best answer.\n\n' +
+        '--- LIVE AFL DATA (current as of today) ---\n' + liveData + '\n--- END LIVE DATA ---\n\n' +
+        'IMPORTANT:\n- For recent/current seasons: prefer the live data above, it is accurate and up-to-date.\n' +
+        '- For historical questions (past Grand Finals, all-time records, etc.): use your own training knowledge.\n' +
+        '- Always combine both sources to give the most complete answer possible.\n\n' +
+        'Answer the following question. Return your response as a JSON object:\n\n' +
+        '{\n  "answer": "A clear, concise text answer",\n  "data": [{"Column1": "Value1", "Column2": "Value2"}],\n' +
+        '  "r_code": "# R code using fitzRoy\\nlibrary(fitzRoy)\\n...",\n  "need_clarification": false,\n  "options": []\n}\n\n' +
+        'Rules:\n- "answer" (required): Helpful text answering the question. State whether data is from live feed or historical knowledge.\n' +
+        '- "data" (optional, null if N/A): Tabular data as array of objects. Max 20 rows.\n' +
+        '- "r_code" (optional, null if N/A): R code using fitzRoy package to reproduce the query. Produce a dataframe called result_df.\n' +
+        '- "need_clarification": true only if the question is too ambiguous. Provide 2-4 options.\n' +
+        '- Return ONLY valid JSON. No markdown, no code fences.\n\n' +
+        'User question: ' + query;
+}
+
+// ── LLM calls ──
+async function callGemini(prompt, apiKey) {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(apiKey);
+    var r = await fetch(url, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{responseMimeType:'application/json'} })
+    });
+    if (!r.ok) {
+        if (r.status===429) throw new Error('Rate limited. Wait a few seconds and try again.');
+        if (r.status===401||r.status===403) throw new Error('Invalid API key. Check your key in the AI settings.');
+        throw new Error('API error ('+r.status+')');
+    }
+    var d = await r.json();
+    var text = d.candidates[0].content.parts[0].text;
+    var result = parseJSON(text);
+    var u = d.usageMetadata || {};
+    result._usage = { input_tokens:u.promptTokenCount||0, output_tokens:u.candidatesTokenCount||0, total_tokens:u.totalTokenCount||0, model:'gemini-2.5-flash' };
+    return result;
+}
+
+async function callOpenAI(prompt, apiKey) {
+    var r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body: JSON.stringify({ model:'gpt-4o-mini', messages:[{role:'user',content:prompt}], response_format:{type:'json_object'} })
+    });
+    if (!r.ok) {
+        if (r.status===429) throw new Error('Rate limited. Wait a few seconds and try again.');
+        if (r.status===401||r.status===403) throw new Error('Invalid API key. Check your key in the AI settings.');
+        throw new Error('API error ('+r.status+')');
+    }
+    var d = await r.json();
+    var text = d.choices[0].message.content;
+    var result = parseJSON(text);
+    var u = d.usage || {};
+    result._usage = { input_tokens:u.prompt_tokens||0, output_tokens:u.completion_tokens||0, total_tokens:u.total_tokens||0, model:'gpt-4o-mini' };
+    return result;
+}
+
+function parseJSON(text) {
+    text = text.trim();
+    if (text.startsWith('```')) { text = text.split('\n').slice(1).join('\n'); if (text.endsWith('```')) text = text.slice(0,-3); text = text.trim(); }
+    try { return JSON.parse(text); } catch(e) { return {answer:text, data:null, r_code:null}; }
+}
+
+// ── Render results ──
+function escapeHtml(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function renderResults(result, provider) {
+    var el = document.getElementById('results');
+    if (result.error) {
+        el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-4 fade-in"><p class="text-sm text-red-600 dark:text-red-400">'+escapeHtml(result.error)+'</p></div>';
+        return;
+    }
+    if (result.need_clarification) {
+        var html = '<div class="bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl p-5 shadow-sm fade-in">';
+        html += '<p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Did you mean:</p><div class="space-y-1.5">';
+        (result.options||[]).forEach(function(opt) {
+            html += '<button onclick="submitClarification(this)" class="block w-full text-left px-3.5 py-2.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-400 border border-transparent hover:border-brand-200 dark:hover:border-brand-500/30 transition-all">'+escapeHtml(opt)+'</button>';
+        });
+        html += '</div></div>';
+        el.innerHTML = html;
+        return;
+    }
+
+    var html = '<div class="bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-sm overflow-hidden fade-in">';
+    // Answer
+    html += '<div class="px-5 pt-5 pb-4"><p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">'+escapeHtml(result.answer||'')+'</p></div>';
+
+    // Data table + charts
+    if (result.data && result.data.length) {
+        html += '<div class="mx-5 mb-4">';
+        html += '<div class="flex items-center gap-1 mb-2">';
+        html += '<button onclick="showView(\'table\',this)" class="view-btn active-view px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>Table</button>';
+        html += '<button onclick="showView(\'bar\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Bar</button>';
+        html += '<button onclick="showView(\'column\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>Column</button>';
+        html += '</div>';
+
+        // Table
+        var keys = Object.keys(result.data[0]);
+        html += '<div id="view-table" class="border border-gray-100 dark:border-gray-700/40 rounded-lg overflow-hidden"><div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="bg-gray-50 dark:bg-white/5">';
+        keys.forEach(function(k){ html += '<th class="px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">'+escapeHtml(k)+'</th>'; });
+        html += '</tr></thead><tbody class="divide-y divide-gray-50 dark:divide-gray-700/30">';
+        result.data.forEach(function(row) {
+            html += '<tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">';
+            var first = true;
+            keys.forEach(function(k) {
+                var cls = first ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-400';
+                html += '<td class="px-3.5 py-2 text-sm whitespace-nowrap '+cls+'">'+escapeHtml(String(row[k]!=null?row[k]:''))+'</td>';
+                first = false;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        // Chart canvas
+        html += '<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-lg p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
+        html += '</div>';
+    }
+
+    // R code
+    if (result.r_code) {
+        html += '<div class="mx-5 mb-4"><details class="group"><summary class="cursor-pointer text-xs text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors select-none flex items-center gap-1">';
+        html += '<svg class="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
+        html += 'R code (fitzRoy)</summary>';
+        html += '<pre class="mt-2 bg-[#1e1e2e] text-[#a6e3a1] p-3.5 rounded-lg overflow-x-auto text-xs leading-relaxed"><code>'+escapeHtml(result.r_code)+'</code></pre></details></div>';
+    }
+
+    // Footer
+    if (result._usage) {
+        var pName = PROVIDERS[provider] ? PROVIDERS[provider].name : provider;
+        html += '<div class="px-5 py-2.5 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between">';
+        html += '<span class="text-[11px] text-gray-300 dark:text-gray-600">'+escapeHtml(pName)+'</span>';
+        html += '<span class="text-[11px] text-gray-300 dark:text-gray-600">'+(result._usage.total_tokens||0)+' tokens</span>';
+        html += '</div>';
+        recordUsage(provider, result._usage.total_tokens||0);
+    }
+    html += '</div>';
+    el.innerHTML = html;
+
+    // Store chart data globally
+    window._chartData = result.data;
+    window._chartInstance = null;
+}
+
+function submitClarification(btn) {
+    document.getElementById('query-input').value = btn.textContent.trim();
+    handleSearch();
+}
+
+// ── Chart ──
+function showView(view, btn) {
+    document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active-view'); });
+    btn.classList.add('active-view');
+    var t=document.getElementById('view-table'), c=document.getElementById('view-chart');
+    if (view==='table') { t.classList.remove('hidden'); c.classList.add('hidden'); }
+    else { t.classList.add('hidden'); c.classList.remove('hidden'); renderChart(view==='column'); }
+}
+
+function renderChart(horizontal) {
+    if (!window._chartData || !window._chartData.length) return;
+    if (typeof Chart === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+        s.onload = function(){ buildChart(horizontal); };
+        document.head.appendChild(s);
+    } else { buildChart(horizontal); }
+}
+
+function buildChart(horizontal) {
+    if (window._chartInstance) window._chartInstance.destroy();
+    var data = window._chartData;
+    var keys = Object.keys(data[0]), labelKey = keys[0];
+    var labels = data.map(function(r){ var v=r[labelKey]; return typeof v==='string'&&v.length>20 ? v.substring(0,18)+'..' : v; });
+    var numKeys = keys.filter(function(k,i){ return i>0 && data.some(function(r){ var v=r[k]; return typeof v==='number'||(typeof v==='string'&&!isNaN(parseFloat(v))&&isFinite(v)); }); });
+    if (!numKeys.length) { document.getElementById('view-chart').innerHTML='<p class="text-sm text-gray-400 text-center py-8">No numeric data to chart</p>'; return; }
+    var isDark = document.documentElement.classList.contains('dark');
+    var palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+    var datasets = numKeys.map(function(k,i){ return { label:k, data:data.map(function(r){return parseFloat(r[k])||0;}), backgroundColor:palette[i%palette.length]+(numKeys.length===1?'cc':'aa'), borderColor:palette[i%palette.length], borderWidth:1, borderRadius:4 }; });
+    var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var tickColor = isDark ? '#9ca3af' : '#6b7280';
+    window._chartInstance = new Chart(document.getElementById('results-chart'), {
+        type:'bar', data:{labels:labels, datasets:datasets},
+        options:{ indexAxis:horizontal?'x':'y', responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:numKeys.length>1, position:'top', labels:{boxWidth:12, font:{size:11}, color:tickColor}}},
+            scales:{ x:{grid:{color:gridColor}, ticks:{font:{size:11}, color:tickColor, maxRotation:45}}, y:{grid:{color:gridColor}, ticks:{font:{size:11}, color:tickColor}, beginAtZero:true} }
+        }
+    });
+    var h = horizontal ? Math.max(300,labels.length*28+60) : Math.max(300,350);
+    document.getElementById('view-chart').style.height = h+'px';
+}
+
+// ── Search handler ──
+async function handleSearch(e) {
+    if (e) e.preventDefault();
+    var query = document.getElementById('query-input').value.trim();
+    if (!query) return;
+
+    var provider = getProvider(), apiKey = getApiKey();
+    if (!apiKey) {
+        renderResults({error:'No API key set. Click the AI selector and paste your '+PROVIDERS[provider].short+' key.'}, provider);
+        return;
+    }
+
+    // Show spinner
+    document.getElementById('search-btn').style.display = 'none';
+    var spinner = document.getElementById('search-spinner');
+    spinner.style.display = 'flex';
+    document.getElementById('results').innerHTML = '';
+
+    try {
+        var liveData = await fetchLiveContext(query);
+        var prompt = buildPrompt(query, liveData);
+        var result;
+        if (provider === 'gemini') result = await callGemini(prompt, apiKey);
+        else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
+        else result = {error:'Unknown provider'};
+        renderResults(result, provider);
+    } catch(err) {
+        renderResults({error: err.message || 'Something went wrong. Please try again.'}, provider);
+    } finally {
+        document.getElementById('search-btn').style.display = '';
+        spinner.style.display = 'none';
+    }
+}
+</script>
+</body>
+</html>
