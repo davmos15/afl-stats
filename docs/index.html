@@ -305,12 +305,31 @@ async function fetchLiveContext(query) {
         if (wantsPlayers) {
             var ps = results['player_stats'];
             var yearData = ps && ps[String(yr)];
-            if (yearData) {
+            if (yearData && yearData.players) {
+                var allPlayers = yearData.players;
+                // Check if query mentions a specific team
+                var teamFilter = null;
+                var teamNames = ['Adelaide','Brisbane','Carlton','Collingwood','Essendon','Fremantle','Geelong','Gold Coast','Greater Western Sydney','GWS','Hawthorn','Melbourne','North Melbourne','Port Adelaide','Richmond','St Kilda','Sydney','West Coast','Western Bulldogs'];
+                teamNames.forEach(function(t) {
+                    if (lower.includes(t.toLowerCase())) teamFilter = t;
+                });
+                if (lower.includes('gws')) teamFilter = 'Greater Western Sydney';
+
+                var filtered = allPlayers;
+                if (teamFilter) {
+                    filtered = allPlayers.filter(function(p){ return p.team.toLowerCase().includes(teamFilter.toLowerCase()); });
+                    if (filtered.length) {
+                        var teamGoals = filtered.slice().sort(function(a,b){return b.goals-a.goals;}).slice(0,20);
+                        sections.push('=== '+yr+' '+teamFilter.toUpperCase()+' PLAYER STATS ===\n'+JSON.stringify(teamGoals.map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals, disposals:p.disposals, kicks:p.kicks, marks:p.marks, tackles:p.tackles};})));
+                    }
+                }
+
+                // Always include league-wide top lists
                 if (yearData.top_goals && yearData.top_goals.length) {
-                    sections.push('=== '+yr+' TOP GOAL KICKERS ===\n'+JSON.stringify(yearData.top_goals.slice(0,15).map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals};})));
+                    sections.push('=== '+yr+' TOP GOAL KICKERS (LEAGUE) ===\n'+JSON.stringify(yearData.top_goals.slice(0,15).map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals};})));
                 }
                 if (yearData.top_disposals && yearData.top_disposals.length) {
-                    sections.push('=== '+yr+' TOP DISPOSAL WINNERS ===\n'+JSON.stringify(yearData.top_disposals.slice(0,10).map(function(p){return {player:p.player, team:p.team, games:p.games, disposals:p.disposals};})));
+                    sections.push('=== '+yr+' TOP DISPOSAL WINNERS (LEAGUE) ===\n'+JSON.stringify(yearData.top_disposals.slice(0,10).map(function(p){return {player:p.player, team:p.team, games:p.games, disposals:p.disposals};})));
                 }
             }
         }
@@ -323,9 +342,10 @@ function buildPrompt(query, liveData) {
     return 'You are an AFL (Australian Football League) statistics expert with deep knowledge of players, teams, seasons, records, and history.\n\n' +
         'You have access to LIVE DATA below AND your own extensive knowledge of AFL history. Use BOTH to give the best answer.\n\n' +
         '--- LIVE AFL DATA (current as of today) ---\n' + liveData + '\n--- END LIVE DATA ---\n\n' +
-        'IMPORTANT:\n- For recent/current seasons: prefer the live data above, it is accurate and up-to-date.\n' +
-        '- For historical questions (past Grand Finals, all-time records, etc.): use your own training knowledge.\n' +
-        '- Always combine both sources to give the most complete answer possible.\n\n' +
+        'CRITICAL RULES:\n- For current/recent season data (2025, 2026): ONLY use the live data above. Do NOT guess, infer, or use your training data for current season stats. If a player is not in the live data, do NOT include them.\n' +
+        '- Players change teams every year via trades and retirements. NEVER assume a player is still at the same team as previous years. Only use the team listed in the live data.\n' +
+        '- For historical questions (pre-2025 Grand Finals, all-time records, etc.): use your training knowledge.\n' +
+        '- When the live data contains team-specific player stats, use ONLY those players for that team.\n\n' +
         'Answer the following question. Return your response as a JSON object:\n\n' +
         '{\n  "answer": "A clear, concise text answer",\n  "data": [{"Column1": "Value1", "Column2": "Value2"}],\n' +
         '  "r_code": "# R code using fitzRoy\\nlibrary(fitzRoy)\\n...",\n  "need_clarification": false,\n  "options": []\n}\n\n' +
