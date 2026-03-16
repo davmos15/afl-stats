@@ -236,6 +236,18 @@ async function fetchSquiggle(endpoint, params) {
     } catch(e) { return []; }
 }
 
+// ── Player stats (pre-scraped, updated daily by GitHub Actions) ──
+var _playerStatsCache = null;
+async function fetchPlayerStats() {
+    if (_playerStatsCache) return _playerStatsCache;
+    try {
+        var r = await fetch('player-stats.json');
+        if (!r.ok) return null;
+        _playerStatsCache = await r.json();
+        return _playerStatsCache;
+    } catch(e) { return null; }
+}
+
 async function fetchLiveContext(query) {
     var currentYear = new Date().getFullYear(), lower = query.toLowerCase();
     var years = new Set();
@@ -246,11 +258,15 @@ async function fetchLiveContext(query) {
 
     var wantsPlayers = ['goal','kick','mark','handball','disposal','tackle','player','who scored','who kicked','top scorer','brownlow','coleman','leading','most goals'].some(function(w){return lower.includes(w);});
 
+    // Fetch Squiggle data + player stats in parallel
     var tasks = [], keys = [];
     years.forEach(function(yr) {
         keys.push('standings_'+yr); tasks.push(fetchSquiggle('standings',{year:yr}));
         keys.push('games_'+yr);     tasks.push(fetchSquiggle('games',{year:yr}));
     });
+    if (wantsPlayers) {
+        keys.push('player_stats'); tasks.push(fetchPlayerStats());
+    }
     var raw = await Promise.all(tasks);
     var results = {};
     keys.forEach(function(k,i){ results[k] = raw[i]; });
@@ -284,8 +300,19 @@ async function fetchLiveContext(query) {
                 }
             }
         }
-        if (wantsPlayers && !sections.some(function(s){return s.includes('GOAL KICKERS');})) {
-            sections.push('(Player-level stats like goals/disposals require the self-hosted version with AFL Tables scraping. Answer using your training knowledge for player stats.)');
+
+        // Player stats from pre-scraped JSON
+        if (wantsPlayers) {
+            var ps = results['player_stats'];
+            var yearData = ps && ps[String(yr)];
+            if (yearData) {
+                if (yearData.top_goals && yearData.top_goals.length) {
+                    sections.push('=== '+yr+' TOP GOAL KICKERS ===\n'+JSON.stringify(yearData.top_goals.slice(0,15).map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals};})));
+                }
+                if (yearData.top_disposals && yearData.top_disposals.length) {
+                    sections.push('=== '+yr+' TOP DISPOSAL WINNERS ===\n'+JSON.stringify(yearData.top_disposals.slice(0,10).map(function(p){return {player:p.player, team:p.team, games:p.games, disposals:p.disposals};})));
+                }
+            }
         }
     });
     return sections.length ? sections.join('\n\n') : '(No live data available - answer from your own knowledge)';
