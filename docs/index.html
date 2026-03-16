@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-        if (localStorage.getItem('afl_theme') === 'dark' || (!localStorage.getItem('afl_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (localStorage.getItem('afl_theme') !== 'light') {
             document.documentElement.classList.add('dark');
         }
     </script>
@@ -32,11 +32,11 @@
         .dropdown-enter { animation: dropIn 0.15s ease-out; }
         @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .usage-bar { transition: width 0.4s ease-out; }
-        .hero-gradient { background: linear-gradient(135deg, #01285e 0%, #0053FF 100%); }
-        .dark .hero-gradient { background: linear-gradient(135deg, #01285e 0%, #013a8a 60%, #0053FF 100%); }
+        .hero-gradient { background: linear-gradient(135deg, #001838 0%, #01285e 50%, #013a8a 100%); }
+        .dark .hero-gradient { background: linear-gradient(135deg, #000c1f 0%, #01285e 60%, #013a8a 100%); }
         .hero-pattern {
-            background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.15) 0%, transparent 50%),
-                              radial-gradient(circle at 80% 20%, rgba(59,139,255,0.1) 0%, transparent 40%);
+            background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.12) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(59,139,255,0.08) 0%, transparent 40%);
         }
         .search-glow:focus { box-shadow: 0 0 0 3px rgba(0,83,255,0.25), 0 4px 20px rgba(0,83,255,0.15); }
         .view-btn { color: #6b7280; }
@@ -84,7 +84,7 @@
                     </div>
                     <div>
                         <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">AFL Stats</h1>
-                        <p class="text-[11px] text-blue-200 font-medium tracking-wide uppercase">Search Engine</p>
+                        <p class="text-[11px] text-cyan-300 font-medium tracking-wide uppercase">Search Engine</p>
                     </div>
                 </div>
                 <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all">
@@ -96,7 +96,7 @@
             <!-- Tagline -->
             <div class="text-center mb-6">
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Ask anything about footy</h2>
-                <p class="text-blue-200 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
+                <p class="text-sky-300 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
             </div>
 
             <!-- Search -->
@@ -107,7 +107,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" id="query-input"
-                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl text-[15px] text-white placeholder-blue-200/70 focus:outline-none focus:border-white/60 transition-all"
+                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/20 backdrop-blur-md border border-white/35 rounded-2xl text-[15px] text-white placeholder-sky-200 focus:outline-none focus:border-white/60 transition-all"
                         placeholder="Who kicked the most goals in 2025?"
                         required autofocus>
                     <button type="submit" id="search-btn"
