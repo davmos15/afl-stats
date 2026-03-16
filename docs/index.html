@@ -313,12 +313,37 @@ async function fetchPlayerStats() {
 async function fetchLiveContext(query) {
     var currentYear = new Date().getFullYear(), lower = query.toLowerCase();
     var years = new Set();
+
+    // Parse explicit years mentioned
     for (var y = 2012; y <= currentYear; y++) { if (lower.includes(String(y))) years.add(y); }
+
+    // Parse "since YYYY" / "from YYYY" to generate year ranges
+    var rangeMatch = lower.match(/(?:since|from|after)\s+(20[12]\d)/);
+    if (rangeMatch) {
+        var startYear = parseInt(rangeMatch[1], 10);
+        for (var ry = startYear; ry <= currentYear; ry++) years.add(ry);
+    }
+
+    // Parse "between YYYY and YYYY" / "YYYY to YYYY"
+    var betweenMatch = lower.match(/(20[12]\d)\s*(?:to|-|and|through)\s*(20[12]\d)/);
+    if (betweenMatch) {
+        var bStart = parseInt(betweenMatch[1], 10), bEnd = parseInt(betweenMatch[2], 10);
+        for (var by = Math.min(bStart,bEnd); by <= Math.max(bStart,bEnd); by++) years.add(by);
+    }
+
+    // Parse "last N years"
+    var lastNMatch = lower.match(/last\s+(\d+)\s+years?/);
+    if (lastNMatch) {
+        var n = parseInt(lastNMatch[1], 10);
+        for (var ly = currentYear - n + 1; ly <= currentYear; ly++) years.add(ly);
+    }
+
     if (['this year','this season','current','latest','now','today'].some(function(w){return lower.includes(w);})) years.add(currentYear);
     if (lower.includes('last year') || lower.includes('last season')) years.add(currentYear-1);
     if (years.size === 0) years.add(currentYear);
 
-    var wantsPlayers = ['goal','kick','mark','handball','disposal','tackle','player','who scored','who kicked','top scorer','brownlow','coleman','leading','most goals'].some(function(w){return lower.includes(w);});
+    var wantsPlayers = ['goal kicker','kick','mark','handball','disposal','tackle','player','who scored','who kicked','top scorer','brownlow','coleman','leading','most goals'].some(function(w){return lower.includes(w);});
+    var wantsTeamGoals = ['total goals','team goals','goals for all','goals scored','average goals','goals per'].some(function(w){return lower.includes(w);});
 
     var tasks = [], keys = [];
     years.forEach(function(yr) {
@@ -334,6 +359,35 @@ async function fetchLiveContext(query) {
 
     var sections = [];
     var sortedYears = Array.from(years).sort();
+
+    // If query wants team-level goal aggregates across multiple years, pre-aggregate
+    if (wantsTeamGoals && sortedYears.length > 1) {
+        var teamAgg = {}; // { teamName: { goals_for, goals_against, behinds_for, behinds_against, points_for, points_against, games } }
+        sortedYears.forEach(function(yr) {
+            var games = results['games_'+yr] || [];
+            var completed = games.filter(function(g){ return g.complete===100; });
+            completed.forEach(function(g) {
+                var ht = g.hteam, at = g.ateam;
+                if (!teamAgg[ht]) teamAgg[ht] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0};
+                if (!teamAgg[at]) teamAgg[at] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0};
+                teamAgg[ht].goals_for += (g.hgoals||0); teamAgg[ht].goals_against += (g.agoals||0);
+                teamAgg[ht].behinds_for += (g.hbehinds||0); teamAgg[ht].behinds_against += (g.abehinds||0);
+                teamAgg[ht].points_for += (g.hscore||0); teamAgg[ht].points_against += (g.ascore||0);
+                teamAgg[ht].games += 1;
+                teamAgg[at].goals_for += (g.agoals||0); teamAgg[at].goals_against += (g.hgoals||0);
+                teamAgg[at].behinds_for += (g.abehinds||0); teamAgg[at].behinds_against += (g.hbehinds||0);
+                teamAgg[at].points_for += (g.ascore||0); teamAgg[at].points_against += (g.hscore||0);
+                teamAgg[at].games += 1;
+            });
+        });
+        var aggArr = Object.keys(teamAgg).map(function(t) {
+            var a = teamAgg[t];
+            return {team:t, games:a.games, goals_for:a.goals_for, goals_against:a.goals_against, behinds_for:a.behinds_for, points_for:a.points_for, points_against:a.points_against, avg_goals_per_game:Math.round(a.goals_for/a.games*100)/100, avg_points_per_game:Math.round(a.points_for/a.games*100)/100};
+        });
+        aggArr.sort(function(a,b){ return b.goals_for - a.goals_for; });
+        sections.push('=== TEAM GOALS AGGREGATED '+sortedYears[0]+'-'+sortedYears[sortedYears.length-1]+' ===\n'+JSON.stringify(aggArr));
+    }
+
     sortedYears.forEach(function(yr) {
         var standings = results['standings_'+yr] || [];
         if (standings.length) {
@@ -345,11 +399,37 @@ async function fetchLiveContext(query) {
         if (games.length) {
             var completed = games.filter(function(g){ return g.complete===100; });
             if (completed.length) {
-                completed.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-                var recent = completed.slice(0,10).map(function(g){
-                    return {round:g.round, label:g.is_final?'Final':'', home:g.hteam, home_score:g.hscore, away:g.ateam, away_score:g.ascore, winner:g.winner, date:String(g.date||'').slice(0,10)};
-                });
-                sections.push('=== '+yr+' RECENT RESULTS ===\n'+JSON.stringify(recent));
+                // For single-year or non-aggregate queries, include recent results
+                if (!wantsTeamGoals || sortedYears.length <= 1) {
+                    completed.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+                    var recent = completed.slice(0,10).map(function(g){
+                        return {round:g.round, label:g.is_final?'Final':'', home:g.hteam, home_score:g.hscore, home_goals:g.hgoals, away:g.ateam, away_score:g.ascore, away_goals:g.agoals, winner:g.winner, date:String(g.date||'').slice(0,10)};
+                    });
+                    sections.push('=== '+yr+' RECENT RESULTS ===\n'+JSON.stringify(recent));
+                }
+
+                // For single-year team goal queries, aggregate that year
+                if (wantsTeamGoals && sortedYears.length <= 1) {
+                    var yrTeamAgg = {};
+                    completed.forEach(function(g) {
+                        var ht = g.hteam, at = g.ateam;
+                        if (!yrTeamAgg[ht]) yrTeamAgg[ht] = {goals_for:0, goals_against:0, points_for:0, points_against:0, games:0};
+                        if (!yrTeamAgg[at]) yrTeamAgg[at] = {goals_for:0, goals_against:0, points_for:0, points_against:0, games:0};
+                        yrTeamAgg[ht].goals_for += (g.hgoals||0); yrTeamAgg[ht].goals_against += (g.agoals||0);
+                        yrTeamAgg[ht].points_for += (g.hscore||0); yrTeamAgg[ht].points_against += (g.ascore||0);
+                        yrTeamAgg[ht].games += 1;
+                        yrTeamAgg[at].goals_for += (g.agoals||0); yrTeamAgg[at].goals_against += (g.hgoals||0);
+                        yrTeamAgg[at].points_for += (g.ascore||0); yrTeamAgg[at].points_against += (g.hscore||0);
+                        yrTeamAgg[at].games += 1;
+                    });
+                    var yrAggArr = Object.keys(yrTeamAgg).map(function(t) {
+                        var a = yrTeamAgg[t];
+                        return {team:t, games:a.games, goals_for:a.goals_for, goals_against:a.goals_against, points_for:a.points_for, points_against:a.points_against, avg_goals_per_game:Math.round(a.goals_for/a.games*100)/100};
+                    });
+                    yrAggArr.sort(function(a,b){ return b.goals_for - a.goals_for; });
+                    sections.push('=== '+yr+' TEAM GOALS ===\n'+JSON.stringify(yrAggArr));
+                }
+
                 var finals = completed.filter(function(g){ return g.is_final; });
                 if (finals.length) {
                     var gfRound = Math.max.apply(null, finals.map(function(g){return g.round||0;}));

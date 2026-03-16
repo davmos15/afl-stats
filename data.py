@@ -4,6 +4,7 @@ import asyncio
 import httpx
 import json
 import logging
+import re
 import time
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -167,6 +168,28 @@ async def fetch_live_context(query: str) -> str:
     for y in range(2012, current_year + 1):
         if str(y) in lower:
             years_to_fetch.add(y)
+
+    # Parse "since YYYY" / "from YYYY" / "after YYYY"
+    range_match = re.search(r"(?:since|from|after)\s+(20[12]\d)", lower)
+    if range_match:
+        start_year = int(range_match.group(1))
+        for ry in range(start_year, current_year + 1):
+            years_to_fetch.add(ry)
+
+    # Parse "YYYY to YYYY" / "between YYYY and YYYY"
+    between_match = re.search(r"(20[12]\d)\s*(?:to|-|and|through)\s*(20[12]\d)", lower)
+    if between_match:
+        b_start, b_end = int(between_match.group(1)), int(between_match.group(2))
+        for by in range(min(b_start, b_end), max(b_start, b_end) + 1):
+            years_to_fetch.add(by)
+
+    # Parse "last N years"
+    last_n_match = re.search(r"last\s+(\d+)\s+years?", lower)
+    if last_n_match:
+        n = int(last_n_match.group(1))
+        for ly in range(current_year - n + 1, current_year + 1):
+            years_to_fetch.add(ly)
+
     if any(w in lower for w in ["this year", "this season", "current", "latest", "now", "today"]):
         years_to_fetch.add(current_year)
     if "last year" in lower or "last season" in lower:
@@ -179,9 +202,16 @@ async def fetch_live_context(query: str) -> str:
     wants_players = any(
         w in lower
         for w in [
-            "goal", "kick", "mark", "handball", "disposal", "tackle",
+            "goal kicker", "kick", "mark", "handball", "disposal", "tackle",
             "player", "who scored", "who kicked", "top scorer",
             "brownlow", "coleman", "leading", "most goals",
+        ]
+    )
+    wants_team_goals = any(
+        w in lower
+        for w in [
+            "total goals", "team goals", "goals for all", "goals scored",
+            "average goals", "goals per",
         ]
     )
 
@@ -198,8 +228,39 @@ async def fetch_live_context(query: str) -> str:
     results = {k: (v if not isinstance(v, Exception) else []) for k, v in zip(keys, raw)}
 
     sections = []
+    sorted_years = sorted(years_to_fetch)
 
-    for year in sorted(years_to_fetch):
+    # Pre-aggregate team goals across multiple years if requested
+    if wants_team_goals and len(sorted_years) > 1:
+        team_agg: dict[str, dict] = {}
+        for year in sorted_years:
+            games = results.get(f"games_{year}", [])
+            completed = [g for g in games if g.get("complete") == 100]
+            for g in completed:
+                ht, at = g.get("hteam"), g.get("ateam")
+                for team, gf, ga, bf, ba, pf, pa in [
+                    (ht, g.get("hgoals", 0), g.get("agoals", 0), g.get("hbehinds", 0), g.get("abehinds", 0), g.get("hscore", 0), g.get("ascore", 0)),
+                    (at, g.get("agoals", 0), g.get("hgoals", 0), g.get("abehinds", 0), g.get("hbehinds", 0), g.get("ascore", 0), g.get("hscore", 0)),
+                ]:
+                    if team not in team_agg:
+                        team_agg[team] = {"goals_for": 0, "goals_against": 0, "behinds_for": 0, "points_for": 0, "points_against": 0, "games": 0}
+                    a = team_agg[team]
+                    a["goals_for"] += gf; a["goals_against"] += ga
+                    a["behinds_for"] += bf
+                    a["points_for"] += pf; a["points_against"] += pa
+                    a["games"] += 1
+        agg_arr = [
+            {"team": t, "games": a["games"], "goals_for": a["goals_for"],
+             "goals_against": a["goals_against"], "behinds_for": a["behinds_for"],
+             "points_for": a["points_for"], "points_against": a["points_against"],
+             "avg_goals_per_game": round(a["goals_for"] / a["games"], 2) if a["games"] else 0,
+             "avg_points_per_game": round(a["points_for"] / a["games"], 2) if a["games"] else 0}
+            for t, a in team_agg.items()
+        ]
+        agg_arr.sort(key=lambda x: x["goals_for"], reverse=True)
+        sections.append(f"=== TEAM GOALS AGGREGATED {sorted_years[0]}-{sorted_years[-1]} ===\n{json.dumps(agg_arr)}")
+
+    for year in sorted_years:
         # Standings
         standings = results.get(f"standings_{year}", [])
         if standings:
@@ -217,9 +278,36 @@ async def fetch_live_context(query: str) -> str:
         if games:
             completed = [g for g in games if g.get("complete") == 100]
             if completed:
-                completed.sort(key=lambda g: g.get("date", ""), reverse=True)
-                recent = [_label_game(g) for g in completed[:10]]
-                sections.append(f"=== {year} RECENT RESULTS ===\n{json.dumps(recent)}")
+                # For single-year or non-aggregate queries, include recent results
+                if not wants_team_goals or len(sorted_years) <= 1:
+                    completed.sort(key=lambda g: g.get("date", ""), reverse=True)
+                    recent = [_label_game(g) for g in completed[:10]]
+                    sections.append(f"=== {year} RECENT RESULTS ===\n{json.dumps(recent)}")
+
+                # For single-year team goal queries, aggregate that year
+                if wants_team_goals and len(sorted_years) <= 1:
+                    yr_agg: dict[str, dict] = {}
+                    for g in completed:
+                        ht, at = g.get("hteam"), g.get("ateam")
+                        for team, gf, ga, pf, pa in [
+                            (ht, g.get("hgoals", 0), g.get("agoals", 0), g.get("hscore", 0), g.get("ascore", 0)),
+                            (at, g.get("agoals", 0), g.get("hgoals", 0), g.get("ascore", 0), g.get("hscore", 0)),
+                        ]:
+                            if team not in yr_agg:
+                                yr_agg[team] = {"goals_for": 0, "goals_against": 0, "points_for": 0, "points_against": 0, "games": 0}
+                            a = yr_agg[team]
+                            a["goals_for"] += gf; a["goals_against"] += ga
+                            a["points_for"] += pf; a["points_against"] += pa
+                            a["games"] += 1
+                    yr_arr = [
+                        {"team": t, "games": a["games"], "goals_for": a["goals_for"],
+                         "goals_against": a["goals_against"], "points_for": a["points_for"],
+                         "points_against": a["points_against"],
+                         "avg_goals_per_game": round(a["goals_for"] / a["games"], 2) if a["games"] else 0}
+                        for t, a in yr_agg.items()
+                    ]
+                    yr_arr.sort(key=lambda x: x["goals_for"], reverse=True)
+                    sections.append(f"=== {year} TEAM GOALS ===\n{json.dumps(yr_arr)}")
 
                 # Grand Final: only if there are actual finals games
                 final_games = [g for g in completed if g.get("is_final", 0)]
