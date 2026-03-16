@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFL Stats Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+                    colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' } }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <!-- Apply dark mode immediately to prevent flash -->
+    <script>
+        if (localStorage.getItem('afl_theme') === 'dark' || (!localStorage.getItem('afl_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: flex; }
+        .htmx-request .hide-on-request { display: none; }
+        .dropdown-enter { animation: dropIn 0.15s ease-out; }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .usage-bar { transition: width 0.4s ease-out; }
+    </style>
+</head>
+<body class="bg-[#f8f9fb] dark:bg-[#0c0d12] min-h-screen font-sans transition-colors duration-200">
+
+    <div class="max-w-2xl mx-auto px-5 pt-14 pb-12">
+
+        <!-- Top bar: dark mode toggle -->
+        <div class="flex justify-end mb-6">
+            <button onclick="toggleTheme()" id="theme-toggle" class="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-200/50 dark:hover:bg-white/5 transition-colors" title="Toggle dark mode">
+                <svg id="icon-sun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg id="icon-moon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">AFL Stats Search</h1>
+            <p class="text-gray-400 dark:text-gray-500 mt-1.5 text-sm">Natural language search for AFL statistics</p>
+        </div>
+
+        <!-- Search -->
+        <form hx-post="/search" hx-target="#results" hx-indicator="#search-area" id="search-area"
+              hx-vals="js:{provider: getProvider(), api_key: getApiKey()}" class="mb-4">
+            <div class="relative">
+                <input type="text" name="query" id="query-input"
+                    class="w-full pl-4 pr-24 py-3.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl text-[15px] text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                    placeholder="Ask anything about AFL stats..."
+                    required autofocus>
+                <button type="submit"
+                    class="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors hide-on-request">
+                    Search
+                </button>
+                <div class="htmx-indicator absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Searching
+                </div>
+            </div>
+        </form>
+
+        <!-- Sub-bar -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="relative">
+                <button onclick="toggleAIPanel()" id="ai-toggle"
+                    class="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <span class="w-1.5 h-1.5 rounded-full" id="ai-status-dot"></span>
+                    <span id="ai-status-label"></span>
+                    <span id="usage-badge" class="text-gray-300 dark:text-gray-600"></span>
+                    <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+
+                <!-- Dropdown -->
+                <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-lg dark:shadow-black/40 z-50 dropdown-enter">
+                    <div class="p-3 pb-0">
+                        <div class="grid grid-cols-3 gap-1.5 mb-3">
+                            {% for key, p in providers.items() %}
+                            <button onclick="selectProvider('{{ key }}')" id="provider-btn-{{ key }}"
+                                class="provider-btn px-2 py-2 text-xs rounded-lg border dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-medium">{{ p.name.split(' ')[0] }}</div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-{{ key }}"></div>
+                            </button>
+                            {% endfor %}
+                        </div>
+                        <div class="relative">
+                            <input type="password" id="api-key-input"
+                                class="w-full pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-700/60 rounded-lg text-xs bg-gray-50 dark:bg-[#12131a] text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                                placeholder="Paste API key">
+                            <button onclick="toggleKeyVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 mb-3">
+                            <a id="signup-link" href="#" target="_blank" class="text-[10px] text-brand-600 hover:underline">Get a free key</a>
+                        </div>
+                    </div>
+                    <!-- Usage -->
+                    <div class="border-t border-gray-100 dark:border-gray-700/40 p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Today's usage</span>
+                            <span id="reset-timer" class="text-[10px] text-gray-400 dark:text-gray-500"></span>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Requests</span>
+                                <span id="req-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                            </div>
+                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div id="req-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Tokens</span>
+                                <span id="tok-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                            </div>
+                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div id="tok-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <span id="tier-label" class="text-[10px] text-gray-300 dark:text-gray-600"></span>
+                            <button onclick="resetUsage()" class="text-[10px] text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 justify-end">
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Grand Final winners</button>
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Top goal kickers 2025</button>
+                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">2025 ladder</button>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('click', function(e) {
+            var panel = document.getElementById('ai-panel');
+            var toggle = document.getElementById('ai-toggle');
+            if (!panel.contains(e.target) && !toggle.contains(e.target)) panel.classList.add('hidden');
+        });
+    </script>
+
+    <script>
+        // Theme
+        function toggleTheme() {
+            var html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('afl_theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('afl_theme', 'dark');
+            }
+        }
+
+        // Provider config
+        var signupUrls = { {% for key, p in providers.items() %}'{{ key }}':'{{ p.signup }}',{% endfor %} };
+        var providerNames = { {% for key, p in providers.items() %}'{{ key }}':'{{ p.name }}',{% endfor %} };
+        var providerShort = { 'gemini':'Gemini', 'openai':'ChatGPT', 'anthropic':'Claude' };
+        var providerColors = { 'gemini':'#4285F4', 'openai':'#10A37F', 'anthropic':'#D97757' };
+        var providerLimits = {
+            'gemini':    { requests: 1500, tokens: 1000000, resetTZ: 'America/Los_Angeles', label: 'Free tier \u00B7 resets midnight PT' },
+            'openai':    { requests: 500,  tokens: 200000,  resetTZ: 'UTC',                 label: 'Free tier \u00B7 resets midnight UTC' },
+            'anthropic': { requests: 1000, tokens: 300000,  resetTZ: 'UTC',                 label: 'Free tier \u00B7 resets midnight UTC' }
+        };
+
+        function todayStr() { return new Date().toISOString().slice(0, 10); }
+        function getProvider() { return localStorage.getItem('afl_provider') || 'gemini'; }
+        function getApiKey() { return localStorage.getItem('afl_key_' + getProvider()) || ''; }
+        function getUsage(p) {
+            var raw = JSON.parse(localStorage.getItem('afl_usage_' + p) || '{}');
+            return (raw.date === todayStr()) ? raw : { queries: 0, total_tokens: 0, date: todayStr() };
+        }
+        function saveUsage(p, u) { u.date = todayStr(); localStorage.setItem('afl_usage_' + p, JSON.stringify(u)); }
+        function recordUsage(provider, tokens) {
+            var u = getUsage(provider); u.queries += 1; u.total_tokens += tokens || 0;
+            saveUsage(provider, u); updateUI();
+        }
+        function formatTokens(n) {
+            if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+            return n.toString();
+        }
+        function getResetMs(tz) {
+            var now = new Date();
+            var parts = {};
+            new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now).forEach(function(p) { parts[p.type] = p.value; });
+            return (86400 - ((parseInt(parts.hour)||0)*3600 + (parseInt(parts.minute)||0)*60 + (parseInt(parts.second)||0))) * 1000;
+        }
+        function formatCountdown(ms) {
+            var h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+            return h > 0 ? 'Resets in ' + h + 'h ' + m + 'm' : 'Resets in ' + m + 'm';
+        }
+        function barColor(pct) { return pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#3b82f6'; }
+
+        function selectProvider(p) {
+            localStorage.setItem('afl_provider', p);
+            document.getElementById('api-key-input').value = localStorage.getItem('afl_key_' + p) || '';
+            updateUI();
+        }
+        function toggleAIPanel() { document.getElementById('ai-panel').classList.toggle('hidden'); }
+        function toggleKeyVisibility() { var el = document.getElementById('api-key-input'); el.type = el.type === 'password' ? 'text' : 'password'; }
+        function resetUsage() { localStorage.removeItem('afl_usage_' + getProvider()); updateUI(); }
+
+        function updateUI() {
+            var cur = getProvider(), color = providerColors[cur], hasKey = !!getApiKey();
+            var usage = getUsage(cur), limits = providerLimits[cur];
+
+            document.getElementById('ai-status-dot').style.backgroundColor = hasKey ? color : '#6b7280';
+            document.getElementById('ai-status-label').textContent = providerShort[cur];
+            document.getElementById('usage-badge').textContent = usage.queries > 0 ? '\u00B7 ' + usage.queries + '/' + limits.requests + ' today' : '';
+
+            document.querySelectorAll('.provider-btn').forEach(function(btn) {
+                var id = btn.id.replace('provider-btn-', ''), c = providerColors[id];
+                if (id === cur) { btn.style.borderColor = c; btn.style.backgroundColor = c + '12'; btn.style.color = c; }
+                else { btn.style.borderColor = ''; btn.style.backgroundColor = ''; btn.style.color = ''; }
+                var u = getUsage(id), uel = document.getElementById('provider-usage-' + id);
+                if (uel) uel.textContent = u.queries > 0 ? u.queries + ' today' : '';
+            });
+
+            document.getElementById('signup-link').href = signupUrls[cur];
+            document.getElementById('signup-link').textContent = 'Get a free ' + providerShort[cur] + ' key';
+
+            var rPct = Math.min(100, (usage.queries / limits.requests) * 100);
+            var tPct = Math.min(100, (usage.total_tokens / limits.tokens) * 100);
+            document.getElementById('req-count').textContent = usage.queries + ' / ' + limits.requests.toLocaleString();
+            document.getElementById('req-bar').style.width = rPct + '%';
+            document.getElementById('req-bar').style.backgroundColor = barColor(rPct);
+            document.getElementById('tok-count').textContent = formatTokens(usage.total_tokens) + ' / ' + formatTokens(limits.tokens);
+            document.getElementById('tok-bar').style.width = tPct + '%';
+            document.getElementById('tok-bar').style.backgroundColor = barColor(tPct);
+            document.getElementById('reset-timer').textContent = formatCountdown(getResetMs(limits.resetTZ));
+            document.getElementById('tier-label').textContent = limits.label;
+        }
+        function updateStatusBar() { updateUI(); }
+        function submitQuery(btn) { var i = document.getElementById('query-input'); i.value = btn.textContent.trim(); i.closest('form').requestSubmit(); }
+
+        setInterval(function() {
+            var el = document.getElementById('reset-timer');
+            if (el) el.textContent = formatCountdown(getResetMs(providerLimits[getProvider()].resetTZ));
+        }, 60000);
+
+        document.getElementById('api-key-input').addEventListener('input', function() {
+            localStorage.setItem('afl_key_' + getProvider(), this.value.trim()); updateUI();
+        });
+        updateUI();
+        var sk = getApiKey(); if (sk) document.getElementById('api-key-input').value = sk;
+    </script>
+</body>
+</html>
