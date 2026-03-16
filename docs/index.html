@@ -11,143 +11,204 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
-                    colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' } }
+                    colors: {
+                        navy: { 800: '#01285e', 900: '#011a3e', 950: '#000d20' },
+                        electric: { 400: '#3b8bff', 500: '#0053FF', 600: '#0044d4' },
+                    }
                 }
             }
         }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         if (localStorage.getItem('afl_theme') === 'dark' || (!localStorage.getItem('afl_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         }
     </script>
     <style>
-        .fade-in { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         .dropdown-enter { animation: dropIn 0.15s ease-out; }
         @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .usage-bar { transition: width 0.4s ease-out; }
-        .view-btn { color: #9ca3af; }
+        .hero-gradient { background: linear-gradient(135deg, #01285e 0%, #0053FF 100%); }
+        .dark .hero-gradient { background: linear-gradient(135deg, #000d20 0%, #01285e 60%, #0044d4 100%); }
+        .hero-pattern {
+            background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(59,139,255,0.1) 0%, transparent 40%);
+        }
+        .search-glow:focus { box-shadow: 0 0 0 3px rgba(0,83,255,0.25), 0 4px 20px rgba(0,83,255,0.15); }
+        .view-btn { color: #6b7280; }
+        .view-btn:hover { background: rgba(0,83,255,0.08); color: #0053FF; }
         .dark .view-btn { color: #6b7280; }
-        .view-btn:hover { background: #f3f4f6; color: #6b7280; }
-        .dark .view-btn:hover { background: rgba(255,255,255,0.05); color: #9ca3af; }
-        .active-view { background: #eff6ff !important; color: #2563eb !important; font-weight: 500; }
-        .dark .active-view { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; }
+        .dark .view-btn:hover { background: rgba(59,139,255,0.1); color: #3b8bff; }
+        .active-view { background: rgba(0,83,255,0.1) !important; color: #0053FF !important; font-weight: 600; }
+        .dark .active-view { background: rgba(59,139,255,0.15) !important; color: #3b8bff !important; }
+        .quick-btn {
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .quick-btn:hover {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+            border-color: rgba(255,255,255,0.3);
+        }
+        .result-card {
+            border-left: 4px solid #0053FF;
+        }
+        .dark .result-card {
+            border-left-color: #3b8bff;
+        }
+        .table-header-row {
+            background: linear-gradient(90deg, #01285e, #0053FF);
+        }
+        .dark .table-header-row {
+            background: linear-gradient(90deg, #011a3e, #01285e);
+        }
     </style>
 </head>
-<body class="bg-[#f8f9fb] dark:bg-[#0c0d12] min-h-screen font-sans transition-colors duration-200">
+<body class="bg-gray-50 dark:bg-[#0a0e1a] min-h-screen font-sans transition-colors duration-200">
 
-    <div class="max-w-2xl mx-auto px-5 pt-14 pb-12">
-
-        <!-- Top bar -->
-        <div class="flex justify-end mb-6">
-            <button onclick="toggleTheme()" class="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-200/50 dark:hover:bg-white/5 transition-colors" title="Toggle dark mode">
-                <svg id="icon-sun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                <svg id="icon-moon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-            </button>
-        </div>
-
-        <!-- Header -->
-        <div class="text-center mb-10">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">AFL Stats Search</h1>
-            <p class="text-gray-400 dark:text-gray-500 mt-1.5 text-sm">Natural language search for AFL statistics</p>
-        </div>
-
-        <!-- Search -->
-        <form onsubmit="handleSearch(event)" id="search-form" class="mb-4">
-            <div class="relative">
-                <input type="text" id="query-input"
-                    class="w-full pl-4 pr-24 py-3.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl text-[15px] text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
-                    placeholder="Ask anything about AFL stats..."
-                    required autofocus>
-                <button type="submit" id="search-btn"
-                    class="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                    Search
-                </button>
-                <div id="search-spinner" class="hidden absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-brand-600 text-white text-sm font-medium rounded-lg items-center gap-2 justify-center" style="display:none">
-                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Searching
+    <!-- Hero / Header -->
+    <div class="hero-gradient hero-pattern">
+        <div class="max-w-3xl mx-auto px-5 pt-6 pb-10">
+            <!-- Top row -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-2.5">
+                    <!-- AFL-style footy icon -->
+                    <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="12" rx="6" ry="9" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 8.5Q12 7 17.5 8.5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M6.5 15.5Q12 17 17.5 15.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">AFL Stats</h1>
+                        <p class="text-[11px] text-blue-200/60 font-medium tracking-wide uppercase">Search Engine</p>
+                    </div>
                 </div>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-all" title="Toggle dark mode">
+                    <svg id="icon-sun" class="w-4.5 h-4.5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg id="icon-moon" class="w-4.5 h-4.5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
             </div>
-        </form>
 
-        <!-- Sub-bar -->
-        <div class="flex items-center justify-between mb-8">
+            <!-- Tagline -->
+            <div class="text-center mb-6">
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Ask anything about footy</h2>
+                <p class="text-blue-200/50 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
+            </div>
+
+            <!-- Search -->
+            <form onsubmit="handleSearch(event)" id="search-form" class="mb-5">
+                <div class="relative max-w-2xl mx-auto">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" id="query-input"
+                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-[15px] text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition-all"
+                        placeholder="Who kicked the most goals in 2025?"
+                        required autofocus>
+                    <button type="submit" id="search-btn"
+                        class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-black/10">
+                        Search
+                    </button>
+                    <div id="search-spinner" class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl items-center gap-2 justify-center shadow-lg" style="display:none">
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Searching
+                    </div>
+                </div>
+            </form>
+
+            <!-- Quick queries -->
+            <div class="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Last 5 Grand Final winners</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Top goal kickers 2025</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">2026 ladder</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Collingwood win/loss record</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="max-w-3xl mx-auto px-5 -mt-2 pb-12">
+
+        <!-- AI selector bar -->
+        <div class="flex items-center justify-between py-3 mb-4">
             <div class="relative">
                 <button onclick="toggleAIPanel()" id="ai-toggle"
-                    class="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                    <span class="w-1.5 h-1.5 rounded-full" id="ai-status-dot"></span>
-                    <span id="ai-status-label"></span>
-                    <span id="usage-badge" class="text-gray-300 dark:text-gray-600"></span>
-                    <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 px-3 py-1.5 rounded-full shadow-sm transition-all">
+                    <span class="w-2 h-2 rounded-full" id="ai-status-dot"></span>
+                    <span id="ai-status-label" class="font-medium"></span>
+                    <span id="usage-badge" class="text-gray-400 dark:text-gray-500"></span>
+                    <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
 
                 <!-- Dropdown -->
-                <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-lg dark:shadow-black/40 z-50 dropdown-enter">
-                    <div class="p-3 pb-0">
-                        <div class="grid grid-cols-2 gap-1.5 mb-3">
+                <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-xl dark:shadow-black/50 z-50 dropdown-enter overflow-hidden">
+                    <div class="p-3.5 pb-0">
+                        <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold mb-2">AI Provider</p>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
                             <button onclick="selectProvider('gemini')" id="provider-btn-gemini"
-                                class="provider-btn px-2 py-2 text-xs rounded-lg border dark:border-gray-700/60 transition-all text-center">
-                                <div class="font-medium">Gemini</div>
+                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-bold">Gemini</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-gemini"></div>
                             </button>
                             <button onclick="selectProvider('openai')" id="provider-btn-openai"
-                                class="provider-btn px-2 py-2 text-xs rounded-lg border dark:border-gray-700/60 transition-all text-center">
-                                <div class="font-medium">OpenAI</div>
+                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-bold">OpenAI</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-openai"></div>
                             </button>
                         </div>
                         <div class="relative">
                             <input type="password" id="api-key-input"
-                                class="w-full pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-700/60 rounded-lg text-xs bg-gray-50 dark:bg-[#12131a] text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
-                                placeholder="Paste API key">
-                            <button onclick="toggleKeyVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400">
+                                class="w-full pl-3 pr-8 py-2.5 border border-gray-200 dark:border-gray-700/60 rounded-xl text-xs bg-gray-50 dark:bg-[#0d1019] text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-electric-500/30 focus:border-electric-500 transition-all"
+                                placeholder="Paste your API key here">
+                            <button onclick="toggleKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             </button>
                         </div>
                         <div class="flex items-center justify-between mt-2 mb-3">
-                            <a id="signup-link" href="#" target="_blank" class="text-[10px] text-brand-600 hover:underline">Get a free key</a>
-                            <p class="text-[10px] text-gray-300 dark:text-gray-600">Key stays in your browser only</p>
+                            <a id="signup-link" href="#" target="_blank" class="text-[11px] text-electric-500 hover:text-electric-400 font-medium hover:underline">Get a free key</a>
+                            <p class="text-[10px] text-gray-400 dark:text-gray-600">Stored in your browser only</p>
                         </div>
                     </div>
                     <!-- Usage -->
-                    <div class="border-t border-gray-100 dark:border-gray-700/40 p-3">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Today's usage</span>
+                    <div class="border-t border-gray-100 dark:border-gray-700/40 p-3.5 bg-gray-50/50 dark:bg-white/[0.02]">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Today's Usage</span>
                             <span id="reset-timer" class="text-[10px] text-gray-400 dark:text-gray-500"></span>
                         </div>
-                        <div class="mb-2">
-                            <div class="flex items-center justify-between mb-0.5">
-                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Requests</span>
-                                <span id="req-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                        <div class="mb-2.5">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Requests</span>
+                                <span id="req-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-semibold"></span>
                             </div>
-                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                                 <div id="req-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
                             </div>
                         </div>
                         <div class="mb-2">
-                            <div class="flex items-center justify-between mb-0.5">
-                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Tokens</span>
-                                <span id="tok-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium"></span>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Tokens</span>
+                                <span id="tok-count" class="text-[10px] text-gray-500 dark:text-gray-400 font-semibold"></span>
                             </div>
-                            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                                 <div id="tok-bar" class="usage-bar h-full rounded-full" style="width:0%"></div>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between mt-2">
-                            <span id="tier-label" class="text-[10px] text-gray-300 dark:text-gray-600"></span>
-                            <button onclick="resetUsage()" class="text-[10px] text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">Reset</button>
+                        <div class="flex items-center justify-between mt-2.5">
+                            <span id="tier-label" class="text-[10px] text-gray-400 dark:text-gray-600"></span>
+                            <button onclick="resetUsage()" class="text-[10px] text-gray-400 dark:text-gray-600 hover:text-red-500 font-medium transition-colors">Reset</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-1.5 justify-end">
-                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Grand Final winners</button>
-                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">Top goal kickers 2025</button>
-                <button onclick="submitQuery(this)" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 px-2 py-1 rounded-md transition-colors">2025 ladder</button>
+            <div class="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-600">
+                <span>Data: Squiggle API + AFL Tables</span>
+                <span>|</span>
+                <a href="https://github.com/davmos15/afl-stats" target="_blank" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">GitHub</a>
             </div>
         </div>
 
@@ -183,7 +244,7 @@ function recordUsage(provider,tokens) { var u=getUsage(provider); u.queries+=1; 
 function formatTokens(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'k'; return n.toString(); }
 function getResetMs(tz) { var now=new Date(), parts={}; new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(now).forEach(function(p){parts[p.type]=p.value;}); return (86400-((parseInt(parts.hour)||0)*3600+(parseInt(parts.minute)||0)*60+(parseInt(parts.second)||0)))*1000; }
 function formatCountdown(ms) { var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000); return h>0?'Resets in '+h+'h '+m+'m':'Resets in '+m+'m'; }
-function barColor(pct) { return pct>90?'#ef4444':pct>70?'#f59e0b':'#3b82f6'; }
+function barColor(pct) { return pct>90?'#ef4444':pct>70?'#f59e0b':'#0053FF'; }
 
 function selectProvider(p) { localStorage.setItem('afl_provider',p); document.getElementById('api-key-input').value=localStorage.getItem('afl_key_'+p)||''; updateUI(); }
 function toggleAIPanel() { document.getElementById('ai-panel').classList.toggle('hidden'); }
@@ -195,7 +256,7 @@ function updateUI() {
     var cur=getProvider(), p=PROVIDERS[cur], hasKey=!!getApiKey(), usage=getUsage(cur), lim=p.limits;
     document.getElementById('ai-status-dot').style.backgroundColor = hasKey ? p.color : '#6b7280';
     document.getElementById('ai-status-label').textContent = p.short;
-    document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests+' today' : '';
+    document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests : '';
     ['gemini','openai'].forEach(function(id) {
         var btn=document.getElementById('provider-btn-'+id), c=PROVIDERS[id].color;
         if (id===cur) { btn.style.borderColor=c; btn.style.backgroundColor=c+'12'; btn.style.color=c; }
@@ -258,7 +319,6 @@ async function fetchLiveContext(query) {
 
     var wantsPlayers = ['goal','kick','mark','handball','disposal','tackle','player','who scored','who kicked','top scorer','brownlow','coleman','leading','most goals'].some(function(w){return lower.includes(w);});
 
-    // Fetch Squiggle data + player stats in parallel
     var tasks = [], keys = [];
     years.forEach(function(yr) {
         keys.push('standings_'+yr); tasks.push(fetchSquiggle('standings',{year:yr}));
@@ -301,13 +361,11 @@ async function fetchLiveContext(query) {
             }
         }
 
-        // Player stats from pre-scraped JSON
         if (wantsPlayers) {
             var ps = results['player_stats'];
             var yearData = ps && ps[String(yr)];
             if (yearData && yearData.players) {
                 var allPlayers = yearData.players;
-                // Check if query mentions a specific team
                 var teamFilter = null;
                 var teamNames = ['Adelaide','Brisbane','Carlton','Collingwood','Essendon','Fremantle','Geelong','Gold Coast','Greater Western Sydney','GWS','Hawthorn','Melbourne','North Melbourne','Port Adelaide','Richmond','St Kilda','Sydney','West Coast','Western Bulldogs'];
                 teamNames.forEach(function(t) {
@@ -315,16 +373,13 @@ async function fetchLiveContext(query) {
                 });
                 if (lower.includes('gws')) teamFilter = 'Greater Western Sydney';
 
-                var filtered = allPlayers;
                 if (teamFilter) {
-                    filtered = allPlayers.filter(function(p){ return p.team.toLowerCase().includes(teamFilter.toLowerCase()); });
+                    var filtered = allPlayers.filter(function(p){ return p.team.toLowerCase().includes(teamFilter.toLowerCase()); });
                     if (filtered.length) {
                         var teamGoals = filtered.slice().sort(function(a,b){return b.goals-a.goals;}).slice(0,20);
                         sections.push('=== '+yr+' '+teamFilter.toUpperCase()+' PLAYER STATS ===\n'+JSON.stringify(teamGoals.map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals, disposals:p.disposals, kicks:p.kicks, marks:p.marks, tackles:p.tackles};})));
                     }
                 }
-
-                // Always include league-wide top lists
                 if (yearData.top_goals && yearData.top_goals.length) {
                     sections.push('=== '+yr+' TOP GOAL KICKERS (LEAGUE) ===\n'+JSON.stringify(yearData.top_goals.slice(0,15).map(function(p){return {player:p.player, team:p.team, games:p.games, goals:p.goals};})));
                 }
@@ -407,44 +462,45 @@ function escapeHtml(s) { var d=document.createElement('div'); d.textContent=s; r
 function renderResults(result, provider) {
     var el = document.getElementById('results');
     if (result.error) {
-        el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-4 fade-in"><p class="text-sm text-red-600 dark:text-red-400">'+escapeHtml(result.error)+'</p></div>';
+        el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-2xl p-5 fade-in"><p class="text-sm text-red-600 dark:text-red-400 font-medium">'+escapeHtml(result.error)+'</p></div>';
         return;
     }
     if (result.need_clarification) {
-        var html = '<div class="bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl p-5 shadow-sm fade-in">';
-        html += '<p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Did you mean:</p><div class="space-y-1.5">';
+        var html = '<div class="result-card bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl p-5 shadow-sm fade-in">';
+        html += '<p class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Did you mean:</p><div class="space-y-1.5">';
         (result.options||[]).forEach(function(opt) {
-            html += '<button onclick="submitClarification(this)" class="block w-full text-left px-3.5 py-2.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-400 border border-transparent hover:border-brand-200 dark:hover:border-brand-500/30 transition-all">'+escapeHtml(opt)+'</button>';
+            html += '<button onclick="submitClarification(this)" class="block w-full text-left px-4 py-3 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-electric-500/5 dark:hover:bg-electric-500/10 hover:text-electric-500 dark:hover:text-electric-400 border border-transparent hover:border-electric-500/20 transition-all font-medium">'+escapeHtml(opt)+'</button>';
         });
         html += '</div></div>';
         el.innerHTML = html;
         return;
     }
 
-    var html = '<div class="bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-sm overflow-hidden fade-in">';
+    var html = '<div class="result-card bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-sm overflow-hidden fade-in">';
     // Answer
-    html += '<div class="px-5 pt-5 pb-4"><p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">'+escapeHtml(result.answer||'')+'</p></div>';
+    html += '<div class="px-6 pt-6 pb-4"><p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">'+escapeHtml(result.answer||'')+'</p></div>';
 
     // Data table + charts
     if (result.data && result.data.length) {
-        html += '<div class="mx-5 mb-4">';
-        html += '<div class="flex items-center gap-1 mb-2">';
-        html += '<button onclick="showView(\'table\',this)" class="view-btn active-view px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>Table</button>';
-        html += '<button onclick="showView(\'bar\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Bar</button>';
-        html += '<button onclick="showView(\'column\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>Column</button>';
+        html += '<div class="mx-6 mb-5">';
+        html += '<div class="flex items-center gap-1 mb-3">';
+        html += '<button onclick="showView(\'table\',this)" class="view-btn active-view px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>Table</button>';
+        html += '<button onclick="showView(\'bar\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Bar</button>';
+        html += '<button onclick="showView(\'column\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>Column</button>';
         html += '</div>';
 
         // Table
         var keys = Object.keys(result.data[0]);
-        html += '<div id="view-table" class="border border-gray-100 dark:border-gray-700/40 rounded-lg overflow-hidden"><div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="bg-gray-50 dark:bg-white/5">';
-        keys.forEach(function(k){ html += '<th class="px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">'+escapeHtml(k)+'</th>'; });
-        html += '</tr></thead><tbody class="divide-y divide-gray-50 dark:divide-gray-700/30">';
-        result.data.forEach(function(row) {
-            html += '<tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">';
+        html += '<div id="view-table" class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="table-header-row">';
+        keys.forEach(function(k){ html += '<th class="px-4 py-2.5 text-left text-[11px] font-bold text-white uppercase tracking-wider">'+escapeHtml(k)+'</th>'; });
+        html += '</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/30">';
+        result.data.forEach(function(row, idx) {
+            var bg = idx%2===0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/70 dark:bg-white/[0.02]';
+            html += '<tr class="'+bg+' hover:bg-blue-50/50 dark:hover:bg-electric-500/5 transition-colors">';
             var first = true;
             keys.forEach(function(k) {
-                var cls = first ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-400';
-                html += '<td class="px-3.5 py-2 text-sm whitespace-nowrap '+cls+'">'+escapeHtml(String(row[k]!=null?row[k]:''))+'</td>';
+                var cls = first ? 'font-semibold text-navy-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400';
+                html += '<td class="px-4 py-2.5 text-sm whitespace-nowrap '+cls+'">'+escapeHtml(String(row[k]!=null?row[k]:''))+'</td>';
                 first = false;
             });
             html += '</tr>';
@@ -452,31 +508,30 @@ function renderResults(result, provider) {
         html += '</tbody></table></div></div>';
 
         // Chart canvas
-        html += '<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-lg p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
+        html += '<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-xl p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
         html += '</div>';
     }
 
     // R code
     if (result.r_code) {
-        html += '<div class="mx-5 mb-4"><details class="group"><summary class="cursor-pointer text-xs text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors select-none flex items-center gap-1">';
+        html += '<div class="mx-6 mb-5"><details class="group"><summary class="cursor-pointer text-xs text-gray-400 dark:text-gray-500 hover:text-electric-500 dark:hover:text-electric-400 transition-colors select-none flex items-center gap-1.5 font-medium">';
         html += '<svg class="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
         html += 'R code (fitzRoy)</summary>';
-        html += '<pre class="mt-2 bg-[#1e1e2e] text-[#a6e3a1] p-3.5 rounded-lg overflow-x-auto text-xs leading-relaxed"><code>'+escapeHtml(result.r_code)+'</code></pre></details></div>';
+        html += '<pre class="mt-2 bg-navy-950 text-emerald-400 p-4 rounded-xl overflow-x-auto text-xs leading-relaxed border border-navy-800/50"><code>'+escapeHtml(result.r_code)+'</code></pre></details></div>';
     }
 
     // Footer
     if (result._usage) {
         var pName = PROVIDERS[provider] ? PROVIDERS[provider].name : provider;
-        html += '<div class="px-5 py-2.5 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between">';
-        html += '<span class="text-[11px] text-gray-300 dark:text-gray-600">'+escapeHtml(pName)+'</span>';
-        html += '<span class="text-[11px] text-gray-300 dark:text-gray-600">'+(result._usage.total_tokens||0)+' tokens</span>';
+        html += '<div class="px-6 py-3 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between bg-gray-50/50 dark:bg-white/[0.01]">';
+        html += '<span class="text-[11px] text-gray-400 dark:text-gray-600 font-medium">'+escapeHtml(pName)+'</span>';
+        html += '<span class="text-[11px] text-gray-400 dark:text-gray-600 font-medium">'+(result._usage.total_tokens||0)+' tokens</span>';
         html += '</div>';
         recordUsage(provider, result._usage.total_tokens||0);
     }
     html += '</div>';
     el.innerHTML = html;
 
-    // Store chart data globally
     window._chartData = result.data;
     window._chartInstance = null;
 }
@@ -513,14 +568,14 @@ function buildChart(horizontal) {
     var numKeys = keys.filter(function(k,i){ return i>0 && data.some(function(r){ var v=r[k]; return typeof v==='number'||(typeof v==='string'&&!isNaN(parseFloat(v))&&isFinite(v)); }); });
     if (!numKeys.length) { document.getElementById('view-chart').innerHTML='<p class="text-sm text-gray-400 text-center py-8">No numeric data to chart</p>'; return; }
     var isDark = document.documentElement.classList.contains('dark');
-    var palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
-    var datasets = numKeys.map(function(k,i){ return { label:k, data:data.map(function(r){return parseFloat(r[k])||0;}), backgroundColor:palette[i%palette.length]+(numKeys.length===1?'cc':'aa'), borderColor:palette[i%palette.length], borderWidth:1, borderRadius:4 }; });
+    var palette = ['#0053FF','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+    var datasets = numKeys.map(function(k,i){ return { label:k, data:data.map(function(r){return parseFloat(r[k])||0;}), backgroundColor:palette[i%palette.length]+(numKeys.length===1?'cc':'aa'), borderColor:palette[i%palette.length], borderWidth:1, borderRadius:5 }; });
     var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     var tickColor = isDark ? '#9ca3af' : '#6b7280';
     window._chartInstance = new Chart(document.getElementById('results-chart'), {
         type:'bar', data:{labels:labels, datasets:datasets},
         options:{ indexAxis:horizontal?'x':'y', responsive:true, maintainAspectRatio:false,
-            plugins:{legend:{display:numKeys.length>1, position:'top', labels:{boxWidth:12, font:{size:11}, color:tickColor}}},
+            plugins:{legend:{display:numKeys.length>1, position:'top', labels:{boxWidth:12, font:{size:11, weight:'600'}, color:tickColor}}},
             scales:{ x:{grid:{color:gridColor}, ticks:{font:{size:11}, color:tickColor, maxRotation:45}}, y:{grid:{color:gridColor}, ticks:{font:{size:11}, color:tickColor}, beginAtZero:true} }
         }
     });
@@ -540,7 +595,6 @@ async function handleSearch(e) {
         return;
     }
 
-    // Show spinner
     document.getElementById('search-btn').style.display = 'none';
     var spinner = document.getElementById('search-spinner');
     spinner.style.display = 'flex';
