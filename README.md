@@ -18,8 +18,8 @@ Powered by live data from [Squiggle](https://squiggle.com.au) and [AFL Tables](h
 ## Quick Start
 
 ```bash
-git clone https://github.com/your-username/afl-stats.git
-cd afl-stats/afl-stats-search
+git clone https://github.com/davmos15/afl-stats.git
+cd afl-stats
 pip install -r requirements.txt
 python main.py
 ```
@@ -101,17 +101,16 @@ cp .env.example .env
 ## Project Structure
 
 ```
-afl-stats-search/
-  main.py                    # FastAPI app, LLM provider logic
-  data.py                    # Squiggle API + AFL Tables scraper
-  prompts/r_code.tmpl        # LLM prompt template
-  templates/
-    index.html               # Main page (search, AI settings, dark mode)
-    partials/results.html    # HTMX results fragment (table, charts)
-  tests/test_main.py         # Tests
-  requirements.txt           # Python dependencies
-  Dockerfile                 # Container config
-  docker-compose.yml         # Docker Compose
+main.py                    # FastAPI app, LLM provider logic
+data.py                    # Squiggle API + AFL Tables scraper
+prompts/r_code.tmpl        # LLM prompt template
+templates/
+  index.html               # Main page (search, AI settings, dark mode)
+  partials/results.html    # HTMX results fragment (table, charts)
+tests/test_main.py         # Tests
+requirements.txt           # Python dependencies
+Dockerfile                 # Container config
+docker-compose.yml         # Docker Compose
 ```
 
 ## Running Tests
