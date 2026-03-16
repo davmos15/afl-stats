@@ -33,7 +33,7 @@
         @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .usage-bar { transition: width 0.4s ease-out; }
         .hero-gradient { background: linear-gradient(135deg, #01285e 0%, #0053FF 100%); }
-        .dark .hero-gradient { background: linear-gradient(135deg, #000d20 0%, #01285e 60%, #0044d4 100%); }
+        .dark .hero-gradient { background: linear-gradient(135deg, #01285e 0%, #013a8a 60%, #0053FF 100%); }
         .hero-pattern {
             background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.15) 0%, transparent 50%),
                               radial-gradient(circle at 80% 20%, rgba(59,139,255,0.1) 0%, transparent 40%);
@@ -46,15 +46,15 @@
         .active-view { background: rgba(0,83,255,0.1) !important; color: #0053FF !important; font-weight: 600; }
         .dark .active-view { background: rgba(59,139,255,0.15) !important; color: #3b8bff !important; }
         .quick-btn {
-            background: rgba(255,255,255,0.12);
-            color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.18);
+            color: #fff;
             backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
         }
         .quick-btn:hover {
-            background: rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.28);
             color: #fff;
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.4);
         }
         .result-card {
             border-left: 4px solid #0053FF;
@@ -73,48 +73,49 @@
 <body class="bg-gray-50 dark:bg-[#0a0e1a] min-h-screen font-sans transition-colors duration-200">
 
     <!-- Hero / Header -->
-    <div class="hero-gradient hero-pattern">
+    <div class="hero-gradient hero-pattern" role="banner">
         <div class="max-w-3xl mx-auto px-5 pt-6 pb-10">
             <!-- Top row -->
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-2.5">
                     <!-- AFL-style footy icon -->
-                    <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm">
-                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="12" rx="6" ry="9" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 8.5Q12 7 17.5 8.5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M6.5 15.5Q12 17 17.5 15.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+                    <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="12" cy="12" rx="6" ry="9" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 8.5Q12 7 17.5 8.5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M6.5 15.5Q12 17 17.5 15.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
                     </div>
                     <div>
                         <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">AFL Stats</h1>
-                        <p class="text-[11px] text-blue-200/60 font-medium tracking-wide uppercase">Search Engine</p>
+                        <p class="text-[11px] text-blue-200 font-medium tracking-wide uppercase">Search Engine</p>
                     </div>
                 </div>
-                <button onclick="toggleTheme()" class="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-all" title="Toggle dark mode">
-                    <svg id="icon-sun" class="w-4.5 h-4.5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    <svg id="icon-moon" class="w-4.5 h-4.5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all">
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 </button>
             </div>
 
             <!-- Tagline -->
             <div class="text-center mb-6">
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Ask anything about footy</h2>
-                <p class="text-blue-200/50 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
+                <p class="text-blue-200 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
             </div>
 
             <!-- Search -->
-            <form onsubmit="handleSearch(event)" id="search-form" class="mb-5">
+            <form onsubmit="handleSearch(event)" id="search-form" class="mb-5" role="search">
                 <div class="relative max-w-2xl mx-auto">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
+                    <label for="query-input" class="sr-only">Search AFL statistics</label>
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70" aria-hidden="true">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" id="query-input"
-                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-[15px] text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition-all"
+                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/15 backdrop-blur-md border border-white/30 rounded-2xl text-[15px] text-white placeholder-blue-200/70 focus:outline-none focus:border-white/60 transition-all"
                         placeholder="Who kicked the most goals in 2025?"
                         required autofocus>
                     <button type="submit" id="search-btn"
-                        class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-black/10">
+                        class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-lg shadow-black/10">
                         Search
                     </button>
-                    <div id="search-spinner" class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl items-center gap-2 justify-center shadow-lg" style="display:none">
-                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    <div id="search-spinner" class="absolute right-2 top-2 bottom-2 px-6 bg-white text-navy-800 text-sm font-bold rounded-xl items-center gap-2 justify-center shadow-lg" style="display:none" aria-live="polite">
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                         Searching
                     </div>
                 </div>
@@ -122,10 +123,10 @@
 
             <!-- Quick queries -->
             <div class="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
-                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Last 5 Grand Final winners</button>
-                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Top goal kickers 2025</button>
-                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">2026 ladder</button>
-                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all">Collingwood win/loss record</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/50">Last 5 Grand Final winners</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/50">Top goal kickers 2025</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/50">2026 ladder</button>
+                <button onclick="submitQuery(this)" class="quick-btn text-xs px-3 py-1.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/50">Collingwood win/loss record</button>
             </div>
         </div>
     </div>
@@ -136,8 +137,8 @@
         <!-- AI selector bar -->
         <div class="flex items-center justify-between py-3 mb-4">
             <div class="relative">
-                <button onclick="toggleAIPanel()" id="ai-toggle"
-                    class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 px-3 py-1.5 rounded-full shadow-sm transition-all">
+                <button onclick="toggleAIPanel()" id="ai-toggle" aria-label="AI provider settings"
+                    class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 px-3 py-1.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-electric-500/40 transition-all">
                     <span class="w-2 h-2 rounded-full" id="ai-status-dot"></span>
                     <span id="ai-status-label" class="font-medium"></span>
                     <span id="usage-badge" class="text-gray-400 dark:text-gray-500"></span>
@@ -164,13 +165,13 @@
                             <input type="password" id="api-key-input"
                                 class="w-full pl-3 pr-8 py-2.5 border border-gray-200 dark:border-gray-700/60 rounded-xl text-xs bg-gray-50 dark:bg-[#0d1019] text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-electric-500/30 focus:border-electric-500 transition-all"
                                 placeholder="Paste your API key here">
-                            <button onclick="toggleKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400">
+                            <button onclick="toggleKeyVisibility()" aria-label="Toggle key visibility" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             </button>
                         </div>
                         <div class="flex items-center justify-between mt-2 mb-3">
                             <a id="signup-link" href="#" target="_blank" class="text-[11px] text-electric-500 hover:text-electric-400 font-medium hover:underline">Get a free key</a>
-                            <p class="text-[10px] text-gray-400 dark:text-gray-600">Stored in your browser only</p>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400">Stored in your browser only</p>
                         </div>
                     </div>
                     <!-- Usage -->
@@ -198,21 +199,21 @@
                             </div>
                         </div>
                         <div class="flex items-center justify-between mt-2.5">
-                            <span id="tier-label" class="text-[10px] text-gray-400 dark:text-gray-600"></span>
-                            <button onclick="resetUsage()" class="text-[10px] text-gray-400 dark:text-gray-600 hover:text-red-500 font-medium transition-colors">Reset</button>
+                            <span id="tier-label" class="text-[10px] text-gray-500 dark:text-gray-400"></span>
+                            <button onclick="resetUsage()" class="text-[10px] text-gray-500 dark:text-gray-400 hover:text-red-500 font-medium transition-colors">Reset</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-600">
+            <div class="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">
                 <span>Data: Squiggle API + AFL Tables</span>
-                <span>|</span>
-                <a href="https://github.com/davmos15/afl-stats" target="_blank" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">GitHub</a>
+                <span aria-hidden="true">|</span>
+                <a href="https://github.com/davmos15/afl-stats" target="_blank" rel="noopener noreferrer" class="hover:text-gray-700 dark:hover:text-gray-200 underline decoration-gray-300 dark:decoration-gray-600 transition-colors">GitHub</a>
             </div>
         </div>
 
-        <div id="results"></div>
+        <div id="results" aria-live="polite" role="region" aria-label="Search results"></div>
     </div>
 
 <script>
@@ -524,8 +525,8 @@ function renderResults(result, provider) {
     if (result._usage) {
         var pName = PROVIDERS[provider] ? PROVIDERS[provider].name : provider;
         html += '<div class="px-6 py-3 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between bg-gray-50/50 dark:bg-white/[0.01]">';
-        html += '<span class="text-[11px] text-gray-400 dark:text-gray-600 font-medium">'+escapeHtml(pName)+'</span>';
-        html += '<span class="text-[11px] text-gray-400 dark:text-gray-600 font-medium">'+(result._usage.total_tokens||0)+' tokens</span>';
+        html += '<span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">'+escapeHtml(pName)+'</span>';
+        html += '<span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">'+(result._usage.total_tokens||0)+' tokens</span>';
         html += '</div>';
         recordUsage(provider, result._usage.total_tokens||0);
     }
