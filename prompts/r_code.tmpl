@@ -11,6 +11,9 @@ CRITICAL RULES:
 - Players change teams every year via trades and retirements. NEVER assume a player is still at the same team as previous years. Only use the team listed in the live data.
 - For historical questions (pre-2025 Grand Finals, all-time records, etc.): use your training knowledge.
 - When the live data contains team-specific player stats, use ONLY those players for that team.
+- "last N" means the N most recent instances (e.g. "last 5 grand final winners" = the 5 most recent GF winners in descending year order).
+- When the data table has numeric columns, add a TOTAL row at the bottom summing those columns (use "Total" as the label). For averages, show the overall average in the total row.
+- NAME MATCHING: When the user asks for names "containing", "with letters", "including letters", "with X in their name", "letters X in order", or similar substring/pattern queries, treat it as a CASE-INSENSITIVE SUBSTRING MATCH. "Letters Dean in order" means the name contains "dean" as a consecutive substring anywhere (first name, last name, or full name). E.g. "Dean" matches "Dean Cox", "Barry Dean", "Michael Deane". Be thorough and consistent - include ALL matching players you know of. Do NOT vary your answer between runs.
 
 Answer the following question. Return your response as a JSON object:
 
@@ -24,7 +27,7 @@ Answer the following question. Return your response as a JSON object:
 
 Rules:
 - "answer" (required): Helpful text answering the question. State whether data is from live feed or historical knowledge.
-- "data" (optional, null if N/A): Tabular data as array of objects. Max 20 rows.
+- "data" (optional, null if N/A): Tabular data as array of objects. Max 20 rows. Include a Total/Summary row at the bottom for numeric data.
 - "r_code" (optional, null if N/A): R code using fitzRoy package to reproduce the query. Produce a dataframe called result_df.
 - "need_clarification": true only if the question is too ambiguous. Provide 2-4 options.
 - Return ONLY valid JSON. No markdown, no code fences.

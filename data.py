@@ -190,6 +190,13 @@ async def fetch_live_context(query: str) -> str:
         for ly in range(current_year - n + 1, current_year + 1):
             years_to_fetch.add(ly)
 
+    # Parse "last N <something>" (e.g. "last 5 grand finals", "last 10 winners")
+    last_n_any = re.search(r"last\s+(\d+)\s+(?!years)", lower)
+    if last_n_any and not last_n_match:
+        ln = int(last_n_any.group(1))
+        for la in range(current_year - ln + 1, current_year + 1):
+            years_to_fetch.add(la)
+
     if any(w in lower for w in ["this year", "this season", "current", "latest", "now", "today"]):
         years_to_fetch.add(current_year)
     if "last year" in lower or "last season" in lower:

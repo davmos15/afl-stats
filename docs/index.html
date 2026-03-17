@@ -306,8 +306,9 @@ function updateUI() {
     document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests : '';
     ['gemini','groq','openai','claude'].forEach(function(id) {
         var btn=document.getElementById('provider-btn-'+id), c=PROVIDERS[id].color;
+        var isDark = document.documentElement.classList.contains('dark');
         if (id===cur) { btn.style.borderColor=c; btn.style.backgroundColor=c+'12'; btn.style.color=c; }
-        else { btn.style.borderColor=''; btn.style.backgroundColor=''; btn.style.color=''; }
+        else { btn.style.borderColor=''; btn.style.backgroundColor=''; btn.style.color=isDark?'#e5e7eb':''; }
         var u=getUsage(id), uel=document.getElementById('provider-usage-'+id);
         if(uel) uel.textContent = u.queries>0 ? u.queries+' today' : '';
     });
@@ -382,6 +383,13 @@ async function fetchLiveContext(query) {
     if (lastNMatch) {
         var n = parseInt(lastNMatch[1], 10);
         for (var ly = currentYear - n + 1; ly <= currentYear; ly++) years.add(ly);
+    }
+
+    // Parse "last N <something>" (e.g. "last 5 grand finals", "last 10 winners")
+    var lastNAnyMatch = lower.match(/last\s+(\d+)\s+(?!years)/);
+    if (lastNAnyMatch && !lastNMatch) {
+        var ln = parseInt(lastNAnyMatch[1], 10);
+        for (var la = currentYear - ln + 1; la <= currentYear; la++) years.add(la);
     }
 
     if (['this year','this season','current','latest','now','today'].some(function(w){return lower.includes(w);})) years.add(currentYear);
@@ -527,12 +535,15 @@ function buildPrompt(query, liveData) {
         'CRITICAL RULES:\n- For current/recent season data (2025, 2026): ONLY use the live data above. Do NOT guess, infer, or use your training data for current season stats. If a player is not in the live data, do NOT include them.\n' +
         '- Players change teams every year via trades and retirements. NEVER assume a player is still at the same team as previous years. Only use the team listed in the live data.\n' +
         '- For historical questions (pre-2025 Grand Finals, all-time records, etc.): use your training knowledge.\n' +
-        '- When the live data contains team-specific player stats, use ONLY those players for that team.\n\n' +
+        '- When the live data contains team-specific player stats, use ONLY those players for that team.\n' +
+        '- "last N" means the N most recent instances (e.g. "last 5 grand final winners" = the 5 most recent GF winners in descending year order).\n' +
+        '- When the data table has numeric columns, add a TOTAL row at the bottom summing those columns (use "Total" as the label). For averages, show the overall average in the total row.\n' +
+        '- NAME MATCHING: When the user asks for names "containing", "with letters", "including letters", "with X in their name", "letters X in order", or similar substring/pattern queries, treat it as a CASE-INSENSITIVE SUBSTRING MATCH. "Letters Dean in order" means the name contains "dean" as a consecutive substring anywhere (first name, last name, or full name). E.g. "Dean" matches "Dean Cox", "Barry Dean", "Michael Deane". Be thorough and consistent - include ALL matching players you know of. Do NOT vary your answer between runs.\n\n' +
         'Answer the following question. Return your response as a JSON object:\n\n' +
         '{\n  "answer": "A clear, concise text answer",\n  "data": [{"Column1": "Value1", "Column2": "Value2"}],\n' +
         '  "r_code": "# R code using fitzRoy\\nlibrary(fitzRoy)\\n...",\n  "need_clarification": false,\n  "options": []\n}\n\n' +
         'Rules:\n- "answer" (required): Helpful text answering the question. State whether data is from live feed or historical knowledge.\n' +
-        '- "data" (optional, null if N/A): Tabular data as array of objects. Max 20 rows.\n' +
+        '- "data" (optional, null if N/A): Tabular data as array of objects. Max 20 rows. Include a Total/Summary row at the bottom for numeric data.\n' +
         '- "r_code" (optional, null if N/A): R code using fitzRoy package to reproduce the query. Produce a dataframe called result_df.\n' +
         '- "need_clarification": true only if the question is too ambiguous. Provide 2-4 options.\n' +
         '- Return ONLY valid JSON. No markdown, no code fences.\n\n' +
