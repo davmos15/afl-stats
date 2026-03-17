@@ -68,6 +68,26 @@
         .dark .table-header-row {
             background: linear-gradient(90deg, #011a3e, #01285e);
         }
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { background: rgba(255,255,255,0.1); }
+        .sort-arrow { font-size: 9px; margin-left: 3px; opacity: 0.5; }
+        .sort-arrow.active { opacity: 1; }
+        .add-col-wrap { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+        .add-col-input {
+            width: 0; opacity: 0; padding: 0; border: none; font-size: 11px;
+            transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+            background: transparent; outline: none;
+            color: #374151; border-bottom: 1px solid transparent;
+        }
+        .dark .add-col-input { color: #d1d5db; }
+        .add-col-wrap.open .add-col-input {
+            width: 140px; opacity: 1; padding: 2px 0;
+            border-bottom-color: #0053FF;
+        }
+        .dark .add-col-wrap.open .add-col-input { border-bottom-color: #3b8bff; }
+        .add-col-spinner { display: none; }
+        .add-col-wrap.loading .add-col-spinner { display: inline-block; }
+        .add-col-wrap.loading .add-col-icon { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-[#0a0e1a] min-h-screen font-sans transition-colors duration-200">
@@ -564,29 +584,21 @@ function renderResults(result, provider) {
     // Data table + charts
     if (result.data && result.data.length) {
         html += '<div class="mx-6 mb-5">';
-        html += '<div class="flex items-center gap-1 mb-3">';
+        html += '<div class="flex items-center gap-1 mb-3 flex-wrap">';
         html += '<button onclick="showView(\'table\',this)" class="view-btn active-view px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>Table</button>';
         html += '<button onclick="showView(\'bar\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Bar</button>';
         html += '<button onclick="showView(\'column\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>Column</button>';
+        html += '<span class="add-col-wrap" id="add-col-wrap">';
+        html += '<button onclick="toggleAddColumn()" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1" title="Add a column">';
+        html += '<span class="add-col-icon"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></span>';
+        html += '<span class="add-col-spinner"><svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></span>';
+        html += 'Add Column</button>';
+        html += '<input type="text" class="add-col-input" id="add-col-input" placeholder="e.g. behinds, win %" onkeydown="if(event.key===\'Enter\'){event.preventDefault();handleAddColumn();}">';
+        html += '</span>';
         html += '</div>';
 
-        // Table
-        var keys = Object.keys(result.data[0]);
-        html += '<div id="view-table" class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="table-header-row">';
-        keys.forEach(function(k){ html += '<th class="px-4 py-2.5 text-left text-[11px] font-bold text-white uppercase tracking-wider">'+escapeHtml(k)+'</th>'; });
-        html += '</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/30">';
-        result.data.forEach(function(row, idx) {
-            var bg = idx%2===0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/70 dark:bg-white/[0.02]';
-            html += '<tr class="'+bg+' hover:bg-blue-50/50 dark:hover:bg-electric-500/5 transition-colors">';
-            var first = true;
-            keys.forEach(function(k) {
-                var cls = first ? 'font-semibold text-navy-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400';
-                html += '<td class="px-4 py-2.5 text-sm whitespace-nowrap '+cls+'">'+escapeHtml(String(row[k]!=null?row[k]:''))+'</td>';
-                first = false;
-            });
-            html += '</tr>';
-        });
-        html += '</tbody></table></div></div>';
+        // Table container (populated by rebuildTable)
+        html += '<div id="view-table" class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto" id="table-scroll"></div></div>';
 
         // Chart canvas
         html += '<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-xl p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
@@ -615,11 +627,135 @@ function renderResults(result, provider) {
 
     window._chartData = result.data;
     window._chartInstance = null;
+    window._sortCol = null;
+    window._sortDir = 'asc';
+    if (result.data && result.data.length) rebuildTable();
 }
 
 function submitClarification(btn) {
     document.getElementById('query-input').value = btn.textContent.trim();
     handleSearch();
+}
+
+// ── Table sort & add column ──
+function rebuildTable() {
+    var data = window._chartData;
+    if (!data || !data.length) return;
+    var el = document.getElementById('table-scroll');
+    if (!el) return;
+    var keys = Object.keys(data[0]);
+    var html = '<table class="min-w-full"><thead><tr class="table-header-row">';
+    keys.forEach(function(k) {
+        var arrow = '';
+        if (window._sortCol === k) {
+            arrow = '<span class="sort-arrow active">' + (window._sortDir === 'asc' ? '\u25B2' : '\u25BC') + '</span>';
+        } else {
+            arrow = '<span class="sort-arrow">\u25B2</span>';
+        }
+        html += '<th class="sort-header px-4 py-2.5 text-left text-[11px] font-bold text-white uppercase tracking-wider" onclick="sortTable(\''+k.replace(/'/g,"\\'")+'\')">' + escapeHtml(k) + arrow + '</th>';
+    });
+    html += '</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/30">';
+    data.forEach(function(row, idx) {
+        var bg = idx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/70 dark:bg-white/[0.02]';
+        html += '<tr class="' + bg + ' hover:bg-blue-50/50 dark:hover:bg-electric-500/5 transition-colors">';
+        var first = true;
+        keys.forEach(function(k) {
+            var cls = first ? 'font-semibold text-navy-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400';
+            html += '<td class="px-4 py-2.5 text-sm whitespace-nowrap ' + cls + '">' + escapeHtml(String(row[k] != null ? row[k] : '')) + '</td>';
+            first = false;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function sortTable(colKey) {
+    var data = window._chartData;
+    if (!data || !data.length) return;
+    if (window._sortCol === colKey) {
+        window._sortDir = window._sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        window._sortCol = colKey;
+        window._sortDir = 'asc';
+    }
+    var dir = window._sortDir === 'asc' ? 1 : -1;
+    // detect numeric column
+    var isNum = data.every(function(r) { var v = r[colKey]; return v == null || v === '' || !isNaN(Number(v)); });
+    data.sort(function(a, b) {
+        var va = a[colKey], vb = b[colKey];
+        if (va == null) va = '';
+        if (vb == null) vb = '';
+        if (isNum) return (Number(va) - Number(vb)) * dir;
+        return String(va).localeCompare(String(vb)) * dir;
+    });
+    rebuildTable();
+}
+
+function toggleAddColumn() {
+    var wrap = document.getElementById('add-col-wrap');
+    if (!wrap) return;
+    wrap.classList.toggle('open');
+    if (wrap.classList.contains('open')) {
+        var inp = document.getElementById('add-col-input');
+        if (inp) { inp.value = ''; inp.focus(); }
+    }
+}
+
+async function handleAddColumn() {
+    var inp = document.getElementById('add-col-input');
+    var term = inp ? inp.value.trim() : '';
+    if (!term || !window._chartData || !window._chartData.length) return;
+    var provider = getProvider(), apiKey = getApiKey();
+    if (!apiKey) return;
+    var wrap = document.getElementById('add-col-wrap');
+    wrap.classList.add('loading');
+
+    var prompt = 'You have this AFL statistics data:\n' + JSON.stringify(window._chartData) +
+        '\n\nAdd a new column called "' + term + '" with appropriate values for each row. ' +
+        'Use your AFL knowledge and the existing data to calculate or look up the values. ' +
+        'Return a JSON object: {"data": [<updated array with new column>]}. ' +
+        'Keep all existing columns and add the new one. No markdown, no code fences, no explanation.';
+    try {
+        var result;
+        if (provider === 'gemini') result = await callGemini(prompt, apiKey);
+        else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
+        else throw new Error('Unknown provider');
+        // The result is wrapped in standard format - extract the data
+        var newData = null;
+        if (result.data && Array.isArray(result.data) && result.data.length) {
+            newData = result.data;
+        } else if (result.answer) {
+            // Try parsing the answer as JSON array
+            try { newData = JSON.parse(result.answer); } catch(e) {}
+        }
+        // Also try parsing the raw result if it came back as a plain array
+        if (!newData && Array.isArray(result)) newData = result;
+        if (newData && Array.isArray(newData) && newData.length === window._chartData.length) {
+            window._chartData = newData;
+            rebuildTable();
+        } else {
+            // Fallback: try to merge just the new column
+            if (newData && Array.isArray(newData) && newData.length) {
+                var existingKeys = Object.keys(window._chartData[0]);
+                var newKeys = Object.keys(newData[0]).filter(function(k) { return existingKeys.indexOf(k) === -1; });
+                if (newKeys.length) {
+                    window._chartData.forEach(function(row, i) {
+                        if (newData[i]) {
+                            newKeys.forEach(function(k) { row[k] = newData[i][k]; });
+                        }
+                    });
+                    rebuildTable();
+                }
+            }
+        }
+        if (result._usage) recordUsage(provider, result._usage.total_tokens || 0);
+    } catch(err) {
+        // silently fail - could show toast but keeping it simple
+    } finally {
+        wrap.classList.remove('loading');
+        wrap.classList.remove('open');
+    }
 }
 
 // ── Chart ──

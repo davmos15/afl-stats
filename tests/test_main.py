@@ -44,7 +44,7 @@ def test_search_with_answer(monkeypatch):
     assert response.status_code == 200
     assert "Collingwood" in response.text
     soup = BeautifulSoup(response.content.decode(), "html.parser")
-    assert soup.find("table") is not None
+    assert soup.find("div", id="table-scroll") is not None
 
 
 def test_search_clarification(monkeypatch):

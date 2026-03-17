@@ -31,7 +31,7 @@
     {% if result.data %}
     <div class="mx-5 mb-4">
         <!-- View Toggle -->
-        <div class="flex items-center gap-1 mb-2">
+        <div class="flex items-center gap-1 mb-2 flex-wrap">
             <button onclick="showView('table', this)" class="view-btn active-view px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>
                 Table
@@ -44,30 +44,19 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
                 Column
             </button>
+            <span class="add-col-wrap" id="add-col-wrap">
+                <button onclick="toggleAddColumn()" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1" title="Add a column">
+                    <span class="add-col-icon"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></span>
+                    <span class="add-col-spinner"><svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></span>
+                    Add Column
+                </button>
+                <input type="text" class="add-col-input" id="add-col-input" placeholder="e.g. behinds, win %" onkeydown="if(event.key==='Enter'){event.preventDefault();handleAddColumn();}">
+            </span>
         </div>
 
         <!-- Table -->
         <div id="view-table" class="border border-gray-100 dark:border-gray-700/40 rounded-lg overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead>
-                        <tr class="bg-gray-50 dark:bg-white/5">
-                            {% for key in result.data[0].keys() %}
-                            <th class="px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{{ key }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50 dark:divide-gray-700/30">
-                        {% for row in result.data %}
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                            {% for val in row.values() %}
-                            <td class="px-3.5 py-2 text-sm whitespace-nowrap {% if loop.first %}font-medium text-gray-800 dark:text-gray-200{% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ val }}</td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <div class="overflow-x-auto" id="table-scroll"></div>
         </div>
 
         <!-- Chart -->
@@ -79,6 +68,109 @@
     <script>
         var _chartData = {{ result.data | tojson }};
         var _chartInstance = null;
+        var _sortCol = null;
+        var _sortDir = 'asc';
+
+        function escapeHtml(s) {
+            var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+        }
+
+        function rebuildTable() {
+            var data = _chartData;
+            if (!data || !data.length) return;
+            var el = document.getElementById('table-scroll');
+            if (!el) return;
+            var keys = Object.keys(data[0]);
+            var html = '<table class="min-w-full"><thead><tr class="bg-gray-50 dark:bg-white/5">';
+            keys.forEach(function(k) {
+                var arrow = '';
+                if (_sortCol === k) {
+                    arrow = '<span class="sort-arrow active">' + (_sortDir === 'asc' ? '\u25B2' : '\u25BC') + '</span>';
+                } else {
+                    arrow = '<span class="sort-arrow">\u25B2</span>';
+                }
+                html += '<th class="sort-header px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider" onclick="sortTable(\'' + k.replace(/'/g, "\\'") + '\')">' + escapeHtml(k) + arrow + '</th>';
+            });
+            html += '</tr></thead><tbody class="divide-y divide-gray-50 dark:divide-gray-700/30">';
+            data.forEach(function(row, idx) {
+                html += '<tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">';
+                var first = true;
+                keys.forEach(function(k) {
+                    var cls = first ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-400';
+                    html += '<td class="px-3.5 py-2 text-sm whitespace-nowrap ' + cls + '">' + escapeHtml(String(row[k] != null ? row[k] : '')) + '</td>';
+                    first = false;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            el.innerHTML = html;
+        }
+
+        function sortTable(colKey) {
+            if (!_chartData || !_chartData.length) return;
+            if (_sortCol === colKey) {
+                _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                _sortCol = colKey;
+                _sortDir = 'asc';
+            }
+            var dir = _sortDir === 'asc' ? 1 : -1;
+            var isNum = _chartData.every(function(r) { var v = r[colKey]; return v == null || v === '' || !isNaN(Number(v)); });
+            _chartData.sort(function(a, b) {
+                var va = a[colKey], vb = b[colKey];
+                if (va == null) va = '';
+                if (vb == null) vb = '';
+                if (isNum) return (Number(va) - Number(vb)) * dir;
+                return String(va).localeCompare(String(vb)) * dir;
+            });
+            rebuildTable();
+        }
+
+        function toggleAddColumn() {
+            var wrap = document.getElementById('add-col-wrap');
+            if (!wrap) return;
+            wrap.classList.toggle('open');
+            if (wrap.classList.contains('open')) {
+                var inp = document.getElementById('add-col-input');
+                if (inp) { inp.value = ''; inp.focus(); }
+            }
+        }
+
+        async function handleAddColumn() {
+            var inp = document.getElementById('add-col-input');
+            var term = inp ? inp.value.trim() : '';
+            if (!term || !_chartData || !_chartData.length) return;
+            var provider = typeof getProvider === 'function' ? getProvider() : '';
+            var apiKey = typeof getApiKey === 'function' ? getApiKey() : '';
+            if (!apiKey) return;
+            var wrap = document.getElementById('add-col-wrap');
+            wrap.classList.add('loading');
+
+            var prompt = 'You have this AFL statistics data:\n' + JSON.stringify(_chartData) +
+                '\n\nAdd a new column called "' + term + '" with appropriate values for each row. ' +
+                'Use your AFL knowledge and the existing data to calculate or look up the values. ' +
+                'Return a JSON object: {"data": [<updated array with new column>]}. ' +
+                'Keep all existing columns and add the new one. No markdown, no code fences, no explanation.';
+            try {
+                var r = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'query=' + encodeURIComponent(prompt) + '&provider=' + encodeURIComponent(provider) + '&api_key=' + encodeURIComponent(apiKey)
+                });
+                var text = await r.text();
+                // Try to extract JSON from response
+                try {
+                    var parsed = JSON.parse(text);
+                    if (parsed.data && Array.isArray(parsed.data)) {
+                        _chartData = parsed.data;
+                        rebuildTable();
+                    }
+                } catch(e) {}
+            } catch(err) {} finally {
+                wrap.classList.remove('loading');
+                wrap.classList.remove('open');
+            }
+        }
 
         function showView(view, btn) {
             document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active-view'); });
@@ -125,6 +217,9 @@
             var h = horizontal ? Math.max(300, labels.length*28+60) : Math.max(300, 350);
             document.getElementById('view-chart').style.height = h + 'px';
         }
+
+        // Initial table render
+        rebuildTable();
     </script>
     <style>
         .view-btn { color: #9ca3af; }
@@ -133,6 +228,26 @@
         .dark .view-btn:hover { background: rgba(255,255,255,0.05); color: #9ca3af; }
         .active-view { background: #eff6ff !important; color: #2563eb !important; font-weight: 500; }
         .dark .active-view { background: rgba(37,99,235,0.15) !important; color: #60a5fa !important; }
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { background: rgba(0,0,0,0.03); }
+        .dark .sort-header:hover { background: rgba(255,255,255,0.05); }
+        .sort-arrow { font-size: 9px; margin-left: 3px; opacity: 0.3; }
+        .sort-arrow.active { opacity: 1; }
+        .add-col-wrap { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+        .add-col-input {
+            width: 0; opacity: 0; padding: 0; border: none; font-size: 11px;
+            transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+            background: transparent; outline: none;
+            color: #374151; border-bottom: 1px solid transparent;
+        }
+        .dark .add-col-input { color: #d1d5db; }
+        .add-col-wrap.open .add-col-input {
+            width: 140px; opacity: 1; padding: 2px 0;
+            border-bottom-color: #2563eb;
+        }
+        .add-col-spinner { display: none; }
+        .add-col-wrap.loading .add-col-spinner { display: inline-block; }
+        .add-col-wrap.loading .add-col-icon { display: none; }
     </style>
     {% endif %}
 
