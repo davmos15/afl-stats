@@ -4,17 +4,21 @@
 
 Natural language search for AFL statistics. Ask questions in plain English and get instant answers with data tables, charts, and R code.
 
-Powered by live data from [Squiggle](https://squiggle.com.au) and [AFL Tables](https://afltables.com), with AI from your choice of Google Gemini or OpenAI.
+Powered by live data from [Squiggle](https://squiggle.com.au) and [AFL Tables](https://afltables.com), with AI from your choice of Google Gemini, Groq, OpenAI, or Anthropic Claude.
 
 ## Features
 
 - **Natural language queries** - "Who kicked the most goals in 2025?", "Last 5 Grand Final winners"
 - **Live data** - current season standings, match results, and player stats via Squiggle API and AFL Tables
-- **Multiple AI providers** - Google Gemini (free) or OpenAI
-- **Data tables + charts** - toggle between table, bar chart, and column chart views
+- **Multiple AI providers** - Google Gemini (free), Groq (free), OpenAI, or Anthropic Claude
+- **Data tables + charts** - toggle between table, bar chart, and column chart views with total/summary row
+- **Sortable columns** - click any column header to sort ascending/descending
+- **Add column** - type a term (e.g. "behinds", "win %") to have the AI add a new column to your results
+- **CSV export** - download any results table as a CSV file
+- **Search history** - previous searches are saved and can be revisited, re-sorted, and extended with new columns
 - **R code** - every answer includes fitzRoy R code to reproduce the analysis
 - **Dark mode** - automatic or manual light/dark theme
-- **Usage tracking** - see daily request/token usage against free tier limits
+- **Usage tracking** - see daily request/token usage against free tier limits, with rate limit detection
 - **No server-side key storage** - API keys are stored in your browser's localStorage
 
 ## Quick Start
@@ -46,6 +50,15 @@ You need an API key from at least one provider. **Google Gemini is recommended**
 4. Copy the key and paste it in the app's AI settings
 
 Free tier: 1,500 requests/day, 1M tokens/day. Resets at midnight Pacific Time.
+
+### Groq (Free)
+
+1. Go to [console.groq.com/keys](https://console.groq.com/keys)
+2. Create an account or sign in
+3. Click **Create API Key**
+4. Copy the key and paste it in the app's AI settings
+
+Free tier: 14,400 requests/day, 500K tokens/day. Resets at midnight UTC. Uses `llama-3.3-70b-versatile`.
 
 ### OpenAI (Paid)
 
@@ -97,7 +110,7 @@ cp .env.example .env
 
 - **Backend** - Python 3.12, FastAPI, Uvicorn
 - **Frontend** - Tailwind CSS, HTMX, Chart.js (lazy-loaded)
-- **AI** - Google Gemini 2.5 Flash / OpenAI GPT-4o-mini / Claude Sonnet 4
+- **AI** - Google Gemini 2.5 Flash / Groq Llama 3.3 70B / OpenAI GPT-4o-mini / Claude Sonnet 4
 - **Data** - Squiggle API, AFL Tables
 
 ## Project Structure

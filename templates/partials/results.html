@@ -44,6 +44,10 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
                 Column
             </button>
+            <button onclick="exportCSV()" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1" title="Export as CSV">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export
+            </button>
             <span class="add-col-wrap" id="add-col-wrap">
                 <button onclick="toggleAddColumn()" class="view-btn px-2 py-1 text-[11px] rounded-md transition-all flex items-center gap-1" title="Add a column">
                     <span class="add-col-icon"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></span>
@@ -75,6 +79,8 @@
             var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
         }
 
+        function formatColName(k) { return k.replace(/_/g, ' '); }
+
         function rebuildTable() {
             var data = _chartData;
             if (!data || !data.length) return;
@@ -89,7 +95,7 @@
                 } else {
                     arrow = '<span class="sort-arrow">\u25B2</span>';
                 }
-                html += '<th class="sort-header px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider" onclick="sortTable(\'' + k.replace(/'/g, "\\'") + '\')">' + escapeHtml(k) + arrow + '</th>';
+                html += '<th class="sort-header px-3.5 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider" onclick="sortTable(\'' + k.replace(/'/g, "\\'") + '\')">' + escapeHtml(formatColName(k)) + arrow + '</th>';
             });
             html += '</tr></thead><tbody class="divide-y divide-gray-50 dark:divide-gray-700/30">';
             data.forEach(function(row, idx) {
@@ -102,8 +108,60 @@
                 });
                 html += '</tr>';
             });
-            html += '</tbody></table>';
+            html += '</tbody>';
+            // Total row
+            html += '<tfoot><tr class="bg-gray-100 dark:bg-white/[0.04] border-t-2 border-gray-300 dark:border-gray-600">';
+            var first = true;
+            keys.forEach(function(k) {
+                if (first) {
+                    html += '<td class="px-3.5 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">Total</td>';
+                    first = false;
+                    return;
+                }
+                var isNum = data.every(function(r) { var v = r[k]; return v == null || v === '' || !isNaN(Number(v)); });
+                var hasAny = data.some(function(r) { return r[k] != null && r[k] !== ''; });
+                if (isNum && hasAny) {
+                    var sum = 0;
+                    data.forEach(function(r) { var v = Number(r[k]); if (!isNaN(v)) sum += v; });
+                    var hasDecimal = data.some(function(r) { var v = r[k]; return v != null && String(v).indexOf('.') !== -1; });
+                    html += '<td class="px-3.5 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">' + (hasDecimal ? sum.toFixed(2) : sum) + '</td>';
+                } else {
+                    html += '<td class="px-3.5 py-2 text-sm whitespace-nowrap"></td>';
+                }
+            });
+            html += '</tr></tfoot>';
+            html += '</table>';
             el.innerHTML = html;
+        }
+
+        function exportCSV() {
+            var data = _chartData;
+            if (!data || !data.length) return;
+            var keys = Object.keys(data[0]);
+            var csvEscape = function(v) { var s = String(v == null ? '' : v); if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"'; return s; };
+            var rows = [];
+            rows.push(keys.map(function(k) { return csvEscape(formatColName(k)); }).join(','));
+            data.forEach(function(row) { rows.push(keys.map(function(k) { return csvEscape(row[k]); }).join(',')); });
+            // Total row
+            var totalCells = [];
+            keys.forEach(function(k, i) {
+                if (i === 0) { totalCells.push('Total'); return; }
+                var isNum = data.every(function(r) { var v = r[k]; return v == null || v === '' || !isNaN(Number(v)); });
+                var hasAny = data.some(function(r) { return r[k] != null && r[k] !== ''; });
+                if (isNum && hasAny) {
+                    var sum = 0; data.forEach(function(r) { var v = Number(r[k]); if (!isNaN(v)) sum += v; });
+                    var hasDecimal = data.some(function(r) { var v = r[k]; return v != null && String(v).indexOf('.') !== -1; });
+                    totalCells.push(hasDecimal ? sum.toFixed(2) : String(sum));
+                } else { totalCells.push(''); }
+            });
+            rows.push(totalCells.join(','));
+            var blob = new Blob([rows.join('\n')], {type: 'text/csv;charset=utf-8;'});
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'afl-stats-export.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function sortTable(colKey) {

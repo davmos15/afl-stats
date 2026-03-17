@@ -257,7 +257,12 @@
             </div>
         </div>
 
+        <div class="flex items-center gap-1 mb-4" id="main-tabs">
+            <button onclick="showTab('search')" id="tab-search" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10">Search</button>
+            <button onclick="showTab('history')" id="tab-history" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]">History <span id="history-badge" class="text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hidden">0</span></button>
+        </div>
         <div id="results" aria-live="polite" role="region" aria-label="Search results"></div>
+        <div id="history-view" class="hidden"></div>
     </div>
 
 <script>
@@ -719,6 +724,7 @@ function renderResults(result, provider) {
         html += 'Add Column</button>';
         html += '<input type="text" class="add-col-input" id="add-col-input" placeholder="e.g. behinds, win %" onkeydown="if(event.key===\'Enter\'){event.preventDefault();handleAddColumn();}">';
         html += '</span>';
+        html += '<button onclick="exportCSV()" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1" title="Export as CSV"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Export</button>';
         html += '</div>';
 
         // Suggested columns
@@ -846,7 +852,30 @@ function rebuildTable() {
         });
         html += '</tr>';
     });
-    html += '</tbody></table>';
+    html += '</tbody>';
+    // Total row
+    html += '<tfoot><tr class="bg-gray-100 dark:bg-white/[0.04] border-t-2 border-gray-300 dark:border-gray-600">';
+    var first = true;
+    keys.forEach(function(k) {
+        if (first) {
+            html += '<td class="px-4 py-2.5 text-sm font-bold text-navy-800 dark:text-gray-100 whitespace-nowrap">Total</td>';
+            first = false;
+            return;
+        }
+        var isNum = data.every(function(r) { var v = r[k]; return v == null || v === '' || !isNaN(Number(v)); });
+        var hasAny = data.some(function(r) { return r[k] != null && r[k] !== ''; });
+        if (isNum && hasAny) {
+            var sum = 0;
+            data.forEach(function(r) { var v = Number(r[k]); if (!isNaN(v)) sum += v; });
+            // Show as decimal if any value has decimals
+            var hasDecimal = data.some(function(r) { var v = r[k]; return v != null && String(v).indexOf('.') !== -1; });
+            html += '<td class="px-4 py-2.5 text-sm font-bold text-navy-800 dark:text-gray-100 whitespace-nowrap">' + (hasDecimal ? sum.toFixed(2) : sum) + '</td>';
+        } else {
+            html += '<td class="px-4 py-2.5 text-sm whitespace-nowrap"></td>';
+        }
+    });
+    html += '</tr></tfoot>';
+    html += '</table>';
     el.innerHTML = html;
 }
 
@@ -942,6 +971,38 @@ async function handleAddColumn() {
     }
 }
 
+function exportCSV() {
+    var data = window._chartData;
+    if (!data || !data.length) return;
+    var keys = Object.keys(data[0]);
+    var csvEscape = function(v) { var s = String(v == null ? '' : v); if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"'; return s; };
+    var rows = [];
+    rows.push(keys.map(function(k) { return csvEscape(formatColName(k)); }).join(','));
+    data.forEach(function(row) { rows.push(keys.map(function(k) { return csvEscape(row[k]); }).join(',')); });
+    // Total row
+    var totalCells = [];
+    keys.forEach(function(k, i) {
+        if (i === 0) { totalCells.push('Total'); return; }
+        var isNum = data.every(function(r) { var v = r[k]; return v == null || v === '' || !isNaN(Number(v)); });
+        var hasAny = data.some(function(r) { return r[k] != null && r[k] !== ''; });
+        if (isNum && hasAny) {
+            var sum = 0; data.forEach(function(r) { var v = Number(r[k]); if (!isNaN(v)) sum += v; });
+            var hasDecimal = data.some(function(r) { var v = r[k]; return v != null && String(v).indexOf('.') !== -1; });
+            totalCells.push(hasDecimal ? sum.toFixed(2) : String(sum));
+        } else { totalCells.push(''); }
+    });
+    rows.push(totalCells.join(','));
+    var blob = new Blob([rows.join('\n')], {type: 'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var q = document.getElementById('query-input');
+    var fname = q && q.value.trim() ? q.value.trim().replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '-').substring(0, 40) : 'afl-stats';
+    a.download = fname + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 // ── Chart ──
 function showView(view, btn) {
     document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active-view'); });
@@ -984,6 +1045,124 @@ function buildChart(horizontal) {
     document.getElementById('view-chart').style.height = h+'px';
 }
 
+// ── History ──
+var HISTORY_KEY = 'afl_search_history';
+var HISTORY_MAX = 20;
+
+function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveToHistory(query, result, provider) {
+    if (!result.data || !result.data.length) return;
+    var hist = loadHistory();
+    hist.unshift({query: query, answer: result.answer || '', data: result.data, r_code: result.r_code || null, provider: provider, ts: Date.now()});
+    if (hist.length > HISTORY_MAX) hist = hist.slice(0, HISTORY_MAX);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+    updateHistoryBadge();
+}
+
+function updateHistoryBadge() {
+    var badge = document.getElementById('history-badge');
+    if (!badge) return;
+    var count = loadHistory().length;
+    badge.textContent = count;
+    if (count > 0) badge.classList.remove('hidden');
+    else badge.classList.add('hidden');
+}
+
+function timeAgo(ts) {
+    var s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + 'm ago';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    var d = Math.floor(h / 24);
+    return d + 'd ago';
+}
+
+function showTab(tab) {
+    var searchTab = document.getElementById('tab-search');
+    var histTab = document.getElementById('tab-history');
+    var results = document.getElementById('results');
+    var histView = document.getElementById('history-view');
+    var form = document.querySelector('form');
+    if (tab === 'history') {
+        searchTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
+        histTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10';
+        results.classList.add('hidden');
+        if (form) form.classList.add('hidden');
+        histView.classList.remove('hidden');
+        renderHistoryList();
+    } else {
+        histTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
+        searchTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10';
+        histView.classList.add('hidden');
+        if (form) form.classList.remove('hidden');
+        results.classList.remove('hidden');
+    }
+}
+
+function renderHistoryList() {
+    var el = document.getElementById('history-view');
+    var hist = loadHistory();
+    if (!hist.length) {
+        el.innerHTML = '<div class="text-center py-12 text-gray-400 dark:text-gray-500"><p class="text-sm">No search history yet</p><p class="text-xs mt-1">Your searches will appear here</p></div>';
+        return;
+    }
+    var html = '<div class="space-y-2">';
+    hist.forEach(function(entry, i) {
+        var prov = PROVIDERS[entry.provider] || {};
+        var rows = entry.data ? entry.data.length : 0;
+        html += '<div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700/40 bg-white dark:bg-[#141827] hover:border-electric-500/30 dark:hover:border-electric-400/30 transition-all cursor-pointer group" onclick="loadHistoryEntry('+i+')">';
+        html += '<div class="flex-1 min-w-0">';
+        html += '<p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">'+escapeHtml(entry.query)+'</p>';
+        html += '<div class="flex items-center gap-2 mt-1">';
+        html += '<span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style="background:'+((prov.color||'#666')+'20')+';color:'+(prov.color||'#666')+'">'+(prov.short||entry.provider)+'</span>';
+        html += '<span class="text-[10px] text-gray-400 dark:text-gray-500">'+rows+' rows</span>';
+        html += '<span class="text-[10px] text-gray-400 dark:text-gray-500">'+timeAgo(entry.ts)+'</span>';
+        html += '</div></div>';
+        html += '<button onclick="event.stopPropagation();deleteHistoryEntry('+i+')" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1" title="Delete">';
+        html += '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        html += '</button></div>';
+    });
+    html += '</div>';
+    html += '<div class="text-center mt-4"><button onclick="clearHistory()" class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors">Clear all history</button></div>';
+    el.innerHTML = html;
+}
+
+function loadHistoryEntry(index) {
+    var hist = loadHistory();
+    var entry = hist[index];
+    if (!entry) return;
+    // Switch to search tab to show result
+    showTab('search');
+    // Render the result
+    window._chartData = entry.data;
+    window._sortCol = null;
+    window._sortDir = 'asc';
+    var result = {answer: entry.answer, data: entry.data, r_code: entry.r_code, need_clarification: false};
+    renderResults(result, entry.provider);
+    // Set query input
+    var q = document.getElementById('query-input');
+    if (q) q.value = entry.query;
+}
+
+function deleteHistoryEntry(index) {
+    var hist = loadHistory();
+    hist.splice(index, 1);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+    updateHistoryBadge();
+    renderHistoryList();
+}
+
+function clearHistory() {
+    try { localStorage.removeItem(HISTORY_KEY); } catch(e) {}
+    updateHistoryBadge();
+    renderHistoryList();
+}
+
 // ── Search handler ──
 async function handleSearch(e) {
     if (e) e.preventDefault();
@@ -1011,6 +1190,7 @@ async function handleSearch(e) {
         else if (provider === 'claude') result = await callClaude(prompt, apiKey);
         else result = {error:'Unknown provider'};
         renderResults(result, provider);
+        saveToHistory(query, result, provider);
     } catch(err) {
         renderResults({error: err.message || 'Something went wrong. Please try again.'}, provider);
     } finally {
@@ -1018,6 +1198,8 @@ async function handleSearch(e) {
         spinner.style.display = 'none';
     }
 }
+// Init history badge on load
+updateHistoryBadge();
 </script>
 </body>
 </html>
