@@ -183,19 +183,24 @@
                 <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-xl dark:shadow-black/50 z-50 dropdown-enter overflow-hidden">
                     <div class="p-3.5 pb-0">
                         <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold mb-2">AI Provider</p>
-                        <div class="grid grid-cols-3 gap-2 mb-3">
+                        <div class="grid grid-cols-2 gap-2 mb-3">
                             <button onclick="selectProvider('gemini')" id="provider-btn-gemini"
-                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                class="provider-btn px-3 py-2 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
                                 <div class="font-bold">Gemini</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-gemini"></div>
                             </button>
+                            <button onclick="selectProvider('groq')" id="provider-btn-groq"
+                                class="provider-btn px-3 py-2 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-bold">Groq</div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-groq"></div>
+                            </button>
                             <button onclick="selectProvider('openai')" id="provider-btn-openai"
-                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                class="provider-btn px-3 py-2 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
                                 <div class="font-bold">OpenAI</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-openai"></div>
                             </button>
                             <button onclick="selectProvider('claude')" id="provider-btn-claude"
-                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                class="provider-btn px-3 py-2 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
                                 <div class="font-bold">Claude</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-claude"></div>
                             </button>
@@ -272,6 +277,7 @@ document.addEventListener('click', function(e) {
 // ── Provider config ──
 var PROVIDERS = {
     gemini:  { name:'Google Gemini',   short:'Gemini',  color:'#4285F4', signup:'https://aistudio.google.com/apikey',      limits:{ requests:1500, tokens:1000000, resetTZ:'America/Los_Angeles', label:'Free tier \u00B7 resets midnight PT' }},
+    groq:    { name:'Groq (Llama)',    short:'Groq',    color:'#F55036', signup:'https://console.groq.com/keys',             limits:{ requests:14400,tokens:500000,  resetTZ:'UTC',                 label:'Free tier \u00B7 resets midnight UTC' }},
     openai:  { name:'OpenAI (ChatGPT)',short:'ChatGPT', color:'#10A37F', signup:'https://platform.openai.com/api-keys',   limits:{ requests:500,  tokens:200000,  resetTZ:'UTC',                 label:'Paid \u00B7 resets midnight UTC' }},
     claude:  { name:'Anthropic Claude',short:'Claude',  color:'#D97706', signup:'https://console.anthropic.com/settings/keys', limits:{ requests:1000, tokens:400000,  resetTZ:'UTC',             label:'Paid \u00B7 resets midnight UTC' }},
 };
@@ -298,7 +304,7 @@ function updateUI() {
     document.getElementById('ai-status-dot').style.backgroundColor = hasKey ? p.color : '#6b7280';
     document.getElementById('ai-status-label').textContent = p.short;
     document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests : '';
-    ['gemini','openai','claude'].forEach(function(id) {
+    ['gemini','groq','openai','claude'].forEach(function(id) {
         var btn=document.getElementById('provider-btn-'+id), c=PROVIDERS[id].color;
         if (id===cur) { btn.style.borderColor=c; btn.style.backgroundColor=c+'12'; btn.style.color=c; }
         else { btn.style.borderColor=''; btn.style.backgroundColor=''; btn.style.color=''; }
@@ -581,6 +587,29 @@ async function callGemini(prompt, apiKey) {
     return result;
 }
 
+async function callGroq(prompt, apiKey) {
+    var r;
+    try {
+        r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+            body: JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user',content:prompt}], response_format:{type:'json_object'}, temperature:0.3 })
+        });
+    } catch(e) {
+        throw new Error('Cannot reach Groq API from browser (CORS blocked). Try using the Python backend instead, or switch to Gemini/OpenAI.');
+    }
+    if (!r.ok) {
+        if (r.status===429) await parseRateLimitError(r, 'groq');
+        if (r.status===401||r.status===403) throw new Error('Invalid API key. Check your key in the AI settings.');
+        throw new Error('API error ('+r.status+')');
+    }
+    var d = await r.json();
+    var text = d.choices[0].message.content;
+    var result = parseJSON(text);
+    var u = d.usage || {};
+    result._usage = { input_tokens:u.prompt_tokens||0, output_tokens:u.completion_tokens||0, total_tokens:u.total_tokens||0, model:'llama-3.3-70b' };
+    return result;
+}
+
 async function callOpenAI(prompt, apiKey) {
     var r = await fetch('https://api.openai.com/v1/chat/completions', {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
@@ -859,6 +888,7 @@ async function handleAddColumn() {
     try {
         var result;
         if (provider === 'gemini') result = await callGemini(prompt, apiKey);
+        else if (provider === 'groq') result = await callGroq(prompt, apiKey);
         else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
         else if (provider === 'claude') result = await callClaude(prompt, apiKey);
         else throw new Error('Unknown provider');
@@ -965,6 +995,7 @@ async function handleSearch(e) {
         var prompt = buildPrompt(query, liveData);
         var result;
         if (provider === 'gemini') result = await callGemini(prompt, apiKey);
+        else if (provider === 'groq') result = await callGroq(prompt, apiKey);
         else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
         else if (provider === 'claude') result = await callClaude(prompt, apiKey);
         else result = {error:'Unknown provider'};
