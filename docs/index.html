@@ -32,13 +32,17 @@
         .dropdown-enter { animation: dropIn 0.15s ease-out; }
         @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .usage-bar { transition: width 0.4s ease-out; }
-        .hero-gradient { background: linear-gradient(135deg, #001838 0%, #01285e 50%, #013a8a 100%); }
+        .hero-gradient { background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fc 50%, #c2d6f8 100%); }
         .dark .hero-gradient { background: linear-gradient(135deg, #000c1f 0%, #01285e 60%, #013a8a 100%); }
         .hero-pattern {
+            background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.06) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(59,139,255,0.04) 0%, transparent 40%);
+        }
+        .dark .hero-pattern {
             background-image: radial-gradient(circle at 20% 80%, rgba(0,83,255,0.12) 0%, transparent 50%),
                               radial-gradient(circle at 80% 20%, rgba(59,139,255,0.08) 0%, transparent 40%);
         }
-        .search-glow:focus { box-shadow: 0 0 0 3px rgba(0,83,255,0.25), 0 4px 20px rgba(0,83,255,0.15); }
+        .search-glow:focus { box-shadow: 0 0 0 3px rgba(0,83,255,0.25), 0 4px 20px rgba(0,83,255,0.1); }
         .view-btn { color: #6b7280; }
         .view-btn:hover { background: rgba(0,83,255,0.08); color: #0053FF; }
         .dark .view-btn { color: #6b7280; }
@@ -46,12 +50,22 @@
         .active-view { background: rgba(0,83,255,0.1) !important; color: #0053FF !important; font-weight: 600; }
         .dark .active-view { background: rgba(59,139,255,0.15) !important; color: #3b8bff !important; }
         .quick-btn {
+            background: rgba(0,83,255,0.08);
+            color: #01285e;
+            border: 1px solid rgba(0,83,255,0.2);
+        }
+        .quick-btn:hover {
+            background: rgba(0,83,255,0.15);
+            color: #01285e;
+            border-color: rgba(0,83,255,0.35);
+        }
+        .dark .quick-btn {
             background: rgba(255,255,255,0.18);
             color: #fff;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255,255,255,0.25);
         }
-        .quick-btn:hover {
+        .dark .quick-btn:hover {
             background: rgba(255,255,255,0.28);
             color: #fff;
             border-color: rgba(255,255,255,0.4);
@@ -99,15 +113,15 @@
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-2.5">
                     <!-- AFL-style footy icon -->
-                    <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="12" cy="12" rx="6" ry="9" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 8.5Q12 7 17.5 8.5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M6.5 15.5Q12 17 17.5 15.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+                    <div class="w-9 h-9 rounded-full bg-black/10 dark:bg-white/20 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-navy-800 dark:text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="12" cy="12" rx="6" ry="9" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 8.5Q12 7 17.5 8.5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M6.5 15.5Q12 17 17.5 15.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-extrabold text-white tracking-tight leading-none">AFL Stats</h1>
-                        <p class="text-[11px] text-cyan-300 font-medium tracking-wide uppercase">Search Engine</p>
+                        <h1 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">AFL Stats</h1>
+                        <p class="text-[11px] text-electric-500 dark:text-cyan-300 font-medium tracking-wide uppercase">Search Engine</p>
                     </div>
                 </div>
-                <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all">
+                <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="p-2 rounded-lg text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-electric-500/50 dark:focus:ring-white/50 transition-all">
                     <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 </button>
@@ -115,19 +129,19 @@
 
             <!-- Tagline -->
             <div class="text-center mb-6">
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Ask anything about footy</h2>
-                <p class="text-sky-300 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Ask anything about footy</h2>
+                <p class="text-electric-500 dark:text-sky-300 mt-1.5 text-sm">Powered by live data from Squiggle &amp; AFL Tables</p>
             </div>
 
             <!-- Search -->
             <form onsubmit="handleSearch(event)" id="search-form" class="mb-5" role="search">
                 <div class="relative max-w-2xl mx-auto">
                     <label for="query-input" class="sr-only">Search AFL statistics</label>
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70" aria-hidden="true">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-white/70" aria-hidden="true">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" id="query-input"
-                        class="search-glow w-full pl-12 pr-28 py-4 bg-white/20 backdrop-blur-md border border-white/35 rounded-2xl text-[15px] text-white placeholder-sky-200 focus:outline-none focus:border-white/60 transition-all"
+                        class="search-glow w-full pl-12 pr-28 py-4 bg-white dark:bg-white/20 backdrop-blur-md border border-gray-300 dark:border-white/35 rounded-2xl text-[15px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-sky-200 focus:outline-none focus:border-electric-500 dark:focus:border-white/60 transition-all"
                         placeholder="Who kicked the most goals in 2025?"
                         required autofocus>
                     <button type="submit" id="search-btn"
@@ -169,7 +183,7 @@
                 <div id="ai-panel" class="hidden absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-xl dark:shadow-black/50 z-50 dropdown-enter overflow-hidden">
                     <div class="p-3.5 pb-0">
                         <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold mb-2">AI Provider</p>
-                        <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div class="grid grid-cols-3 gap-2 mb-3">
                             <button onclick="selectProvider('gemini')" id="provider-btn-gemini"
                                 class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
                                 <div class="font-bold">Gemini</div>
@@ -179,6 +193,11 @@
                                 class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
                                 <div class="font-bold">OpenAI</div>
                                 <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-openai"></div>
+                            </button>
+                            <button onclick="selectProvider('claude')" id="provider-btn-claude"
+                                class="provider-btn px-3 py-2.5 text-xs rounded-xl border-2 dark:border-gray-700/60 transition-all text-center">
+                                <div class="font-bold">Claude</div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" id="provider-usage-claude"></div>
                             </button>
                         </div>
                         <div class="relative">
@@ -252,8 +271,9 @@ document.addEventListener('click', function(e) {
 
 // ── Provider config ──
 var PROVIDERS = {
-    gemini:  { name:'Google Gemini',   short:'Gemini',  color:'#4285F4', signup:'https://aistudio.google.com/apikey',    limits:{ requests:1500, tokens:1000000, resetTZ:'America/Los_Angeles', label:'Free tier \u00B7 resets midnight PT' }},
-    openai:  { name:'OpenAI (ChatGPT)',short:'ChatGPT', color:'#10A37F', signup:'https://platform.openai.com/api-keys', limits:{ requests:500,  tokens:200000,  resetTZ:'UTC',                 label:'Paid \u00B7 resets midnight UTC' }},
+    gemini:  { name:'Google Gemini',   short:'Gemini',  color:'#4285F4', signup:'https://aistudio.google.com/apikey',      limits:{ requests:1500, tokens:1000000, resetTZ:'America/Los_Angeles', label:'Free tier \u00B7 resets midnight PT' }},
+    openai:  { name:'OpenAI (ChatGPT)',short:'ChatGPT', color:'#10A37F', signup:'https://platform.openai.com/api-keys',   limits:{ requests:500,  tokens:200000,  resetTZ:'UTC',                 label:'Paid \u00B7 resets midnight UTC' }},
+    claude:  { name:'Anthropic Claude',short:'Claude',  color:'#D97706', signup:'https://console.anthropic.com/settings/keys', limits:{ requests:1000, tokens:400000,  resetTZ:'UTC',             label:'Paid \u00B7 resets midnight UTC' }},
 };
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
@@ -278,7 +298,7 @@ function updateUI() {
     document.getElementById('ai-status-dot').style.backgroundColor = hasKey ? p.color : '#6b7280';
     document.getElementById('ai-status-label').textContent = p.short;
     document.getElementById('usage-badge').textContent = usage.queries>0 ? '\u00B7 '+usage.queries+'/'+lim.requests : '';
-    ['gemini','openai'].forEach(function(id) {
+    ['gemini','openai','claude'].forEach(function(id) {
         var btn=document.getElementById('provider-btn-'+id), c=PROVIDERS[id].color;
         if (id===cur) { btn.style.borderColor=c; btn.style.backgroundColor=c+'12'; btn.style.color=c; }
         else { btn.style.borderColor=''; btn.style.backgroundColor=''; btn.style.color=''; }
@@ -551,6 +571,30 @@ async function callOpenAI(prompt, apiKey) {
     return result;
 }
 
+async function callClaude(prompt, apiKey) {
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json',
+            'x-api-key':apiKey,
+            'anthropic-version':'2023-06-01',
+            'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4096, messages:[{role:'user',content:prompt}] })
+    });
+    if (!r.ok) {
+        if (r.status===429) throw new Error('Rate limited. Wait a few seconds and try again.');
+        if (r.status===401||r.status===403) throw new Error('Invalid API key. Check your key in the AI settings.');
+        throw new Error('API error ('+r.status+')');
+    }
+    var d = await r.json();
+    var text = d.content[0].text;
+    var result = parseJSON(text);
+    var u = d.usage || {};
+    result._usage = { input_tokens:u.input_tokens||0, output_tokens:u.output_tokens||0, total_tokens:(u.input_tokens||0)+(u.output_tokens||0), model:'claude-sonnet-4' };
+    return result;
+}
+
 function parseJSON(text) {
     text = text.trim();
     if (text.startsWith('```')) { text = text.split('\n').slice(1).join('\n'); if (text.endsWith('```')) text = text.slice(0,-3); text = text.trim(); }
@@ -597,6 +641,9 @@ function renderResults(result, provider) {
         html += '</span>';
         html += '</div>';
 
+        // Suggested columns
+        html += '<div id="suggested-cols" class="flex flex-wrap gap-1.5 mb-3"></div>';
+
         // Table container (populated by rebuildTable)
         html += '<div id="view-table" class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto" id="table-scroll"></div></div>';
 
@@ -629,7 +676,10 @@ function renderResults(result, provider) {
     window._chartInstance = null;
     window._sortCol = null;
     window._sortDir = 'asc';
-    if (result.data && result.data.length) rebuildTable();
+    if (result.data && result.data.length) {
+        rebuildTable();
+        showSuggestedColumns();
+    }
 }
 
 function submitClarification(btn) {
@@ -638,6 +688,56 @@ function submitClarification(btn) {
 }
 
 // ── Table sort & add column ──
+function formatColName(k) { return k.replace(/_/g, ' '); }
+
+function showSuggestedColumns() {
+    var el = document.getElementById('suggested-cols');
+    if (!el || !window._chartData || !window._chartData.length) return;
+    var keys = Object.keys(window._chartData[0]).map(function(k) { return k.toLowerCase(); });
+    // Build suggestions based on what columns exist
+    var pool = [
+        {label:'Behinds', when:['goals','goal']},
+        {label:'Total Points', when:['goals','goal']},
+        {label:'Points Per Game', when:['goals','points','score']},
+        {label:'Goals Per Game', when:['goals','games','played']},
+        {label:'Win %', when:['wins','win','w']},
+        {label:'Win/Loss Ratio', when:['wins','losses','w','l']},
+        {label:'Disposals', when:['kicks','marks','handballs']},
+        {label:'Kicks', when:['disposals','marks']},
+        {label:'Marks', when:['kicks','disposals']},
+        {label:'Tackles', when:['disposals','kicks','marks']},
+        {label:'Handballs', when:['kicks','disposals']},
+        {label:'Score Per Game', when:['points_for','total_points','score']},
+        {label:'Percentage', when:['points_for','points_against','for','against']},
+        {label:'Margin', when:['score','points','hscore','ascore']},
+        {label:'Games Played', when:['goals','player','team']},
+    ];
+    var suggestions = [];
+    pool.forEach(function(s) {
+        if (suggestions.length >= 5) return;
+        // skip if column already exists
+        if (keys.some(function(k) { return k.replace(/_/g,' ') === s.label.toLowerCase(); })) return;
+        // include if any trigger word matches an existing column
+        if (s.when.some(function(w) { return keys.some(function(k) { return k.indexOf(w) !== -1; }); })) {
+            suggestions.push(s.label);
+        }
+    });
+    if (!suggestions.length) { el.innerHTML = ''; return; }
+    var html = '<span class="text-[10px] text-gray-400 dark:text-gray-500 self-center mr-1">Add:</span>';
+    suggestions.forEach(function(s) {
+        html += '<button onclick="addSuggestedColumn(this)" class="text-[10px] px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:border-electric-500 dark:hover:border-electric-400 hover:text-electric-500 dark:hover:text-electric-400 transition-all">' + escapeHtml(s) + '</button>';
+    });
+    el.innerHTML = html;
+}
+
+function addSuggestedColumn(btn) {
+    var term = btn.textContent.trim();
+    document.getElementById('add-col-input').value = term;
+    var wrap = document.getElementById('add-col-wrap');
+    if (!wrap.classList.contains('open')) wrap.classList.add('open');
+    handleAddColumn();
+}
+
 function rebuildTable() {
     var data = window._chartData;
     if (!data || !data.length) return;
@@ -652,7 +752,7 @@ function rebuildTable() {
         } else {
             arrow = '<span class="sort-arrow">\u25B2</span>';
         }
-        html += '<th class="sort-header px-4 py-2.5 text-left text-[11px] font-bold text-white uppercase tracking-wider" onclick="sortTable(\''+k.replace(/'/g,"\\'")+'\')">' + escapeHtml(k) + arrow + '</th>';
+        html += '<th class="sort-header px-4 py-2.5 text-left text-[11px] font-bold text-white uppercase tracking-wider" onclick="sortTable(\''+k.replace(/'/g,"\\'")+'\')">' + escapeHtml(formatColName(k)) + arrow + '</th>';
     });
     html += '</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/30">';
     data.forEach(function(row, idx) {
@@ -720,6 +820,7 @@ async function handleAddColumn() {
         var result;
         if (provider === 'gemini') result = await callGemini(prompt, apiKey);
         else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
+        else if (provider === 'claude') result = await callClaude(prompt, apiKey);
         else throw new Error('Unknown provider');
         // The result is wrapped in standard format - extract the data
         var newData = null;
@@ -734,6 +835,7 @@ async function handleAddColumn() {
         if (newData && Array.isArray(newData) && newData.length === window._chartData.length) {
             window._chartData = newData;
             rebuildTable();
+            showSuggestedColumns();
         } else {
             // Fallback: try to merge just the new column
             if (newData && Array.isArray(newData) && newData.length) {
@@ -746,6 +848,7 @@ async function handleAddColumn() {
                         }
                     });
                     rebuildTable();
+                    showSuggestedColumns();
                 }
             }
         }
@@ -823,6 +926,7 @@ async function handleSearch(e) {
         var result;
         if (provider === 'gemini') result = await callGemini(prompt, apiKey);
         else if (provider === 'openai') result = await callOpenAI(prompt, apiKey);
+        else if (provider === 'claude') result = await callClaude(prompt, apiKey);
         else result = {error:'Unknown provider'};
         renderResults(result, provider);
     } catch(err) {
