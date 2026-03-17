@@ -102,6 +102,39 @@
         .add-col-spinner { display: none; }
         .add-col-wrap.loading .add-col-spinner { display: inline-block; }
         .add-col-wrap.loading .add-col-icon { display: none; }
+        /* Stat Finder styles */
+        .finder-form { background: white; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.25rem; }
+        .dark .finder-form { background: #141827; border-color: rgba(55,65,81,0.6); }
+        .finder-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 0.375rem; }
+        .dark .finder-label { color: #9ca3af; }
+        .finder-input, .finder-select {
+            width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+            font-size: 13px; background: #f9fafb; color: #1f2937; outline: none; transition: border-color 0.15s;
+        }
+        .finder-input:focus, .finder-select:focus { border-color: #0053FF; box-shadow: 0 0 0 2px rgba(0,83,255,0.15); }
+        .dark .finder-input, .dark .finder-select { background: #0d1019; border-color: rgba(55,65,81,0.6); color: #e5e7eb; }
+        .dark .finder-input:focus, .dark .finder-select:focus { border-color: #3b8bff; box-shadow: 0 0 0 2px rgba(59,139,255,0.15); }
+        .finder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .finder-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+        @media (max-width: 480px) { .finder-grid, .finder-grid-3 { grid-template-columns: 1fr; } }
+        .finder-section { margin-bottom: 0.875rem; }
+        .finder-pill { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.875rem; border-radius: 9999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 2px solid #d1d5db; background: transparent; color: #6b7280; }
+        .finder-pill.active { border-color: #0053FF; background: rgba(0,83,255,0.1); color: #0053FF; }
+        .dark .finder-pill { border-color: rgba(55,65,81,0.6); color: #9ca3af; }
+        .dark .finder-pill.active { border-color: #3b8bff; background: rgba(59,139,255,0.15); color: #3b8bff; }
+        .finder-checkbox { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 12px; color: #374151; cursor: pointer; margin-right: 0.5rem; margin-bottom: 0.25rem; }
+        .dark .finder-checkbox { color: #d1d5db; }
+        .finder-checkbox input { accent-color: #0053FF; }
+        .finder-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-size: 14px; font-weight: 700;
+            background: #0053FF; color: white; border: none; cursor: pointer; transition: all 0.15s; width: 100%;
+        }
+        .finder-btn:hover { background: #0044d4; }
+        .finder-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .finder-spinner { display: none; }
+        .finder-btn.loading .finder-spinner { display: inline-block; }
+        .finder-btn.loading .finder-btn-text { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-[#0a0e1a] min-h-screen font-sans transition-colors duration-200">
@@ -258,10 +291,13 @@
         </div>
 
         <div class="flex items-center gap-1 mb-4" id="main-tabs">
-            <button onclick="showTab('search')" id="tab-search" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10">Search</button>
+            <button onclick="showTab('search')" id="tab-search" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10"><svg class="w-3.5 h-3.5 inline -mt-0.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.39 6.17H19l-5.3 3.86L15.78 17 10 13.27 4.22 17l2.08-5.97L1 7.17h6.61z"/></svg>Ask AI</button>
+            <button onclick="showTab('finder')" id="tab-finder" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]"><svg class="w-3.5 h-3.5 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>Stat Finder</button>
             <button onclick="showTab('history')" id="tab-history" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]">History <span id="history-badge" class="text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hidden">0</span></button>
         </div>
         <div id="results" aria-live="polite" role="region" aria-label="Search results"></div>
+        <div id="finder-view" class="hidden"></div>
+        <div id="finder-results" class="hidden"></div>
         <div id="history-view" class="hidden"></div>
     </div>
 
@@ -1084,23 +1120,39 @@ function timeAgo(ts) {
 
 function showTab(tab) {
     var searchTab = document.getElementById('tab-search');
+    var finderTab = document.getElementById('tab-finder');
     var histTab = document.getElementById('tab-history');
     var results = document.getElementById('results');
+    var finderView = document.getElementById('finder-view');
+    var finderResults = document.getElementById('finder-results');
     var histView = document.getElementById('history-view');
-    var form = document.querySelector('form');
-    if (tab === 'history') {
-        searchTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
-        histTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10';
-        results.classList.add('hidden');
-        if (form) form.classList.add('hidden');
+    var form = document.getElementById('search-form');
+    var quickBtns = document.querySelector('.flex.flex-wrap.gap-2.justify-center');
+    var inactiveClass = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
+    var activeClass = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10';
+    searchTab.className = inactiveClass;
+    finderTab.className = inactiveClass;
+    histTab.className = inactiveClass;
+    results.classList.add('hidden');
+    finderView.classList.add('hidden');
+    finderResults.classList.add('hidden');
+    histView.classList.add('hidden');
+    if (form) form.classList.add('hidden');
+    if (quickBtns) quickBtns.classList.add('hidden');
+    if (tab === 'search') {
+        searchTab.className = activeClass;
+        if (form) form.classList.remove('hidden');
+        if (quickBtns) quickBtns.classList.remove('hidden');
+        results.classList.remove('hidden');
+    } else if (tab === 'finder') {
+        finderTab.className = activeClass;
+        finderView.classList.remove('hidden');
+        finderResults.classList.remove('hidden');
+        if (!finderView.innerHTML) buildFinderForm();
+    } else if (tab === 'history') {
+        histTab.className = activeClass;
         histView.classList.remove('hidden');
         renderHistoryList();
-    } else {
-        histTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
-        searchTab.className = 'tab-btn px-4 py-2 text-sm font-semibold rounded-lg transition-all text-electric-500 dark:text-electric-400 bg-electric-500/10 dark:bg-electric-400/10';
-        histView.classList.add('hidden');
-        if (form) form.classList.remove('hidden');
-        results.classList.remove('hidden');
     }
 }
 
@@ -1113,7 +1165,8 @@ function renderHistoryList() {
     }
     var html = '<div class="space-y-2">';
     hist.forEach(function(entry, i) {
-        var prov = PROVIDERS[entry.provider] || {};
+        var isFinder = entry.provider === 'stat-finder';
+        var prov = isFinder ? {color:'#10b981', short:'Stat Finder'} : (PROVIDERS[entry.provider] || {});
         var rows = entry.data ? entry.data.length : 0;
         html += '<div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700/40 bg-white dark:bg-[#141827] hover:border-electric-500/30 dark:hover:border-electric-400/30 transition-all cursor-pointer group" onclick="loadHistoryEntry('+i+')">';
         html += '<div class="flex-1 min-w-0">';
@@ -1136,17 +1189,19 @@ function loadHistoryEntry(index) {
     var hist = loadHistory();
     var entry = hist[index];
     if (!entry) return;
-    // Switch to search tab to show result
-    showTab('search');
-    // Render the result
-    window._chartData = entry.data;
-    window._sortCol = null;
-    window._sortDir = 'asc';
-    var result = {answer: entry.answer, data: entry.data, r_code: entry.r_code, need_clarification: false};
-    renderResults(result, entry.provider);
-    // Set query input
-    var q = document.getElementById('query-input');
-    if (q) q.value = entry.query;
+    if (entry.provider === 'stat-finder') {
+        showTab('finder');
+        renderFinderResults(entry.data, entry.query);
+    } else {
+        showTab('search');
+        window._chartData = entry.data;
+        window._sortCol = null;
+        window._sortDir = 'asc';
+        var result = {answer: entry.answer, data: entry.data, r_code: entry.r_code, need_clarification: false};
+        renderResults(result, entry.provider);
+        var q = document.getElementById('query-input');
+        if (q) q.value = entry.query;
+    }
 }
 
 function deleteHistoryEntry(index) {
@@ -1161,6 +1216,524 @@ function clearHistory() {
     try { localStorage.removeItem(HISTORY_KEY); } catch(e) {}
     updateHistoryBadge();
     renderHistoryList();
+}
+
+// ── AFL Teams Constant ──
+var AFL_TEAMS = [
+    'Adelaide', 'Brisbane Lions', 'Carlton', 'Collingwood', 'Essendon',
+    'Fremantle', 'Geelong', 'Gold Coast', 'GWS Giants', 'Greater Western Sydney',
+    'Hawthorn', 'Melbourne', 'North Melbourne', 'Port Adelaide', 'Richmond',
+    'St Kilda', 'Sydney', 'West Coast', 'Western Bulldogs'
+];
+var AFL_TEAMS_DISPLAY = AFL_TEAMS.filter(function(t){ return t !== 'Greater Western Sydney'; });
+
+var PLAYER_STATS = ['games','goals','kicks','marks','handballs','disposals','tackles','behinds'];
+
+var _finderMode = 'player';
+var _teamViewType = 'ladder';
+
+function buildFinderForm() {
+    var el = document.getElementById('finder-view');
+    var currentYear = new Date().getFullYear();
+    var html = '<div class="finder-form">';
+    // Mode toggle
+    html += '<div class="flex items-center gap-2 mb-4">';
+    html += '<button type="button" onclick="setFinderMode(\'player\')" id="finder-mode-player" class="finder-pill active">Player Stats</button>';
+    html += '<button type="button" onclick="setFinderMode(\'team\')" id="finder-mode-team" class="finder-pill">Team Stats</button>';
+    html += '</div>';
+    // Player form
+    html += '<div id="finder-player-form">';
+    html += buildPlayerForm(currentYear);
+    html += '</div>';
+    // Team form
+    html += '<div id="finder-team-form" style="display:none">';
+    html += buildTeamForm(currentYear);
+    html += '</div>';
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+function buildPlayerForm(currentYear) {
+    var html = '';
+    // Season + Team row
+    html += '<div class="finder-grid finder-section">';
+    html += '<div><label class="finder-label">Season</label>';
+    html += '<select id="pf-season" class="finder-select">';
+    html += '<option value="all">All Years</option>';
+    for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
+    html += '</select></div>';
+    html += '<div><label class="finder-label">Team</label>';
+    html += '<select id="pf-team" class="finder-select">';
+    html += '<option value="all">All Teams</option>';
+    AFL_TEAMS_DISPLAY.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+    html += '</select></div>';
+    html += '</div>';
+    // Player name
+    html += '<div class="finder-section">';
+    html += '<label class="finder-label">Player Name</label>';
+    html += '<div class="flex gap-2">';
+    html += '<select id="pf-name-mode" class="finder-select" style="width:auto;min-width:120px">';
+    html += '<option value="contains">Contains</option>';
+    html += '<option value="starts">Starts with</option>';
+    html += '<option value="letters">Letters in order</option>';
+    html += '<option value="exact">Exact match</option>';
+    html += '</select>';
+    html += '<input type="text" id="pf-name" class="finder-input" placeholder="e.g. Dean, Curnow">';
+    html += '</div></div>';
+    // Stats to show
+    html += '<div class="finder-section">';
+    html += '<label class="finder-label">Stats to Show</label>';
+    html += '<div class="flex flex-wrap">';
+    PLAYER_STATS.forEach(function(s) {
+        var label = s.charAt(0).toUpperCase() + s.slice(1);
+        html += '<label class="finder-checkbox"><input type="checkbox" name="pf-stat" value="'+s+'" checked> '+label+'</label>';
+    });
+    html += '</div></div>';
+    // Min games, Sort, Limit
+    html += '<div class="finder-grid-3 finder-section">';
+    html += '<div><label class="finder-label">Min Games</label>';
+    html += '<input type="number" id="pf-mingames" class="finder-input" value="0" min="0"></div>';
+    html += '<div><label class="finder-label">Sort By</label>';
+    html += '<select id="pf-sort" class="finder-select">';
+    PLAYER_STATS.forEach(function(s) {
+        var label = s.charAt(0).toUpperCase() + s.slice(1);
+        html += '<option value="'+s+'"'+(s==='goals'?' selected':'')+'>'+label+'</option>';
+    });
+    html += '</select></div>';
+    html += '<div><label class="finder-label">Show Top</label>';
+    html += '<select id="pf-limit" class="finder-select">';
+    html += '<option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="all">All</option>';
+    html += '</select></div>';
+    html += '</div>';
+    // Order
+    html += '<div class="finder-section">';
+    html += '<label class="finder-label">Order</label>';
+    html += '<div class="flex gap-2">';
+    html += '<label class="finder-checkbox"><input type="radio" name="pf-order" value="desc" checked> Descending</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="pf-order" value="asc"> Ascending</label>';
+    html += '</div></div>';
+    // Submit
+    html += '<button type="button" onclick="runFinderQuery()" id="finder-submit" class="finder-btn">';
+    html += '<span class="finder-btn-text"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Find Stats</span>';
+    html += '<svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
+    html += '</button>';
+    return html;
+}
+
+function buildTeamForm(currentYear) {
+    var html = '';
+    // View type
+    html += '<div class="finder-section">';
+    html += '<label class="finder-label">View Type</label>';
+    html += '<div class="flex gap-2">';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="ladder" checked onchange="onTeamViewChange()"> Ladder</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="results" onchange="onTeamViewChange()"> Match Results</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="summary" onchange="onTeamViewChange()"> Season Summary</label>';
+    html += '</div></div>';
+    // Season + Team row
+    html += '<div class="finder-grid finder-section">';
+    html += '<div><label class="finder-label">Season</label>';
+    html += '<select id="tf-season" class="finder-select">';
+    for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
+    html += '</select></div>';
+    html += '<div><label class="finder-label">Team</label>';
+    html += '<select id="tf-team" class="finder-select">';
+    html += '<option value="all">All Teams</option>';
+    AFL_TEAMS_DISPLAY.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+    html += '</select></div>';
+    html += '</div>';
+    // Opponent (match results only)
+    html += '<div id="tf-opponent-wrap" class="finder-section" style="display:none">';
+    html += '<label class="finder-label">Opponent</label>';
+    html += '<select id="tf-opponent" class="finder-select">';
+    html += '<option value="all">All Teams</option>';
+    AFL_TEAMS_DISPLAY.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+    html += '</select></div>';
+    // Match type
+    html += '<div class="finder-section">';
+    html += '<label class="finder-label">Match Type</label>';
+    html += '<div class="flex gap-2">';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="all" checked> All Matches</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="ha"> Home & Away</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="finals"> Finals</label>';
+    html += '</div></div>';
+    // Venue (match results only)
+    html += '<div id="tf-venue-wrap" class="finder-section" style="display:none">';
+    html += '<label class="finder-label">Venue</label>';
+    html += '<div class="flex gap-2">';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="all" checked> All</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="home"> Home only</label>';
+    html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="away"> Away only</label>';
+    html += '</div></div>';
+    // Round (match results only)
+    html += '<div id="tf-round-wrap" class="finder-grid finder-section" style="display:none">';
+    html += '<div><label class="finder-label">From Round</label>';
+    html += '<input type="number" id="tf-round-from" class="finder-input" placeholder="1" min="1"></div>';
+    html += '<div><label class="finder-label">To Round</label>';
+    html += '<input type="number" id="tf-round-to" class="finder-input" placeholder="24" min="1"></div>';
+    html += '</div>';
+    // Sort & Limit
+    html += '<div class="finder-grid finder-section">';
+    html += '<div><label class="finder-label">Sort By</label>';
+    html += '<select id="tf-sort" class="finder-select">';
+    html += '<option value="auto">Auto</option>';
+    html += '</select></div>';
+    html += '<div><label class="finder-label">Show Top</label>';
+    html += '<select id="tf-limit" class="finder-select">';
+    html += '<option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="all">All</option>';
+    html += '</select></div>';
+    html += '</div>';
+    // Submit
+    html += '<button type="button" onclick="runFinderQuery()" id="finder-submit-team" class="finder-btn">';
+    html += '<span class="finder-btn-text"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Find Stats</span>';
+    html += '<svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
+    html += '</button>';
+    return html;
+}
+
+function setFinderMode(mode) {
+    _finderMode = mode;
+    document.getElementById('finder-mode-player').className = 'finder-pill' + (mode==='player' ? ' active' : '');
+    document.getElementById('finder-mode-team').className = 'finder-pill' + (mode==='team' ? ' active' : '');
+    document.getElementById('finder-player-form').style.display = mode==='player' ? '' : 'none';
+    document.getElementById('finder-team-form').style.display = mode==='team' ? '' : 'none';
+}
+
+function onTeamViewChange() {
+    var view = document.querySelector('input[name="tf-view"]:checked').value;
+    _teamViewType = view;
+    var showResults = view === 'results';
+    document.getElementById('tf-opponent-wrap').style.display = showResults ? '' : 'none';
+    document.getElementById('tf-venue-wrap').style.display = showResults ? '' : 'none';
+    document.getElementById('tf-round-wrap').style.display = showResults ? '' : 'none';
+}
+
+function matchPlayerName(fullName, text, mode) {
+    var name = fullName.toLowerCase(), t = text.toLowerCase();
+    if (!t) return true;
+    if (mode === 'contains') return name.indexOf(t) !== -1;
+    if (mode === 'starts') return name.indexOf(t) === 0;
+    if (mode === 'exact') return name === t;
+    if (mode === 'letters') return name.indexOf(t) !== -1;
+    return name.indexOf(t) !== -1;
+}
+
+function teamMatchesFilter(teamName, filterValue) {
+    if (filterValue === 'all') return true;
+    var tn = teamName.toLowerCase(), fv = filterValue.toLowerCase();
+    if (tn === fv) return true;
+    if (tn.indexOf(fv) !== -1) return true;
+    // Handle GWS aliases
+    if (fv === 'gws giants' && (tn === 'greater western sydney' || tn.indexOf('gws') !== -1 || tn.indexOf('giants') !== -1)) return true;
+    if (fv === 'greater western sydney' && (tn === 'gws giants' || tn.indexOf('gws') !== -1)) return true;
+    if (fv === 'brisbane lions' && tn.indexOf('brisbane') !== -1) return true;
+    if (fv === 'brisbane' && tn.indexOf('brisbane') !== -1) return true;
+    return false;
+}
+
+async function runFinderQuery() {
+    var btn = document.getElementById(_finderMode === 'player' ? 'finder-submit' : 'finder-submit-team');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+        if (_finderMode === 'player') {
+            await runPlayerQuery();
+        } else {
+            await runTeamQuery();
+        }
+    } catch(err) {
+        renderFinderResults(null, 'Error: ' + err.message);
+    } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }
+}
+
+async function runPlayerQuery() {
+    var season = document.getElementById('pf-season').value;
+    var team = document.getElementById('pf-team').value;
+    var nameMode = document.getElementById('pf-name-mode').value;
+    var nameText = document.getElementById('pf-name').value.trim();
+    var minGames = parseInt(document.getElementById('pf-mingames').value) || 0;
+    var sortBy = document.getElementById('pf-sort').value;
+    var limitVal = document.getElementById('pf-limit').value;
+    var order = document.querySelector('input[name="pf-order"]:checked').value;
+    var statsChecked = [];
+    document.querySelectorAll('input[name="pf-stat"]:checked').forEach(function(cb){ statsChecked.push(cb.value); });
+    if (!statsChecked.length) statsChecked = PLAYER_STATS.slice();
+
+    var ps = await fetchPlayerStats();
+    if (!ps) { renderFinderResults(null, 'Could not load player stats data.'); return; }
+
+    var allPlayers = [];
+    var years = [];
+    if (season === 'all') {
+        years = Object.keys(ps).sort();
+    } else {
+        years = [season];
+    }
+    years.forEach(function(yr) {
+        var yearData = ps[yr];
+        if (!yearData || !yearData.players) return;
+        yearData.players.forEach(function(p) {
+            var row = Object.assign({}, p);
+            if (season === 'all') row.season = yr;
+            allPlayers.push(row);
+        });
+    });
+
+    // Apply filters
+    var filtered = allPlayers.filter(function(p) {
+        if (!matchPlayerName(p.player || '', nameText, nameMode)) return false;
+        if (!teamMatchesFilter(p.team || '', team)) return false;
+        if ((p.games || 0) < minGames) return false;
+        return true;
+    });
+
+    // Sort
+    var dir = order === 'desc' ? -1 : 1;
+    filtered.sort(function(a, b) {
+        var va = a[sortBy], vb = b[sortBy];
+        if (va == null) va = 0; if (vb == null) vb = 0;
+        return (Number(va) - Number(vb)) * dir;
+    });
+
+    // Limit
+    var limit = limitVal === 'all' ? filtered.length : parseInt(limitVal);
+    filtered = filtered.slice(0, limit);
+
+    // Build result data
+    var cols = ['player', 'team'];
+    if (season === 'all') cols.splice(0, 0, 'season');
+    statsChecked.forEach(function(s) { cols.push(s); });
+    var resultData = filtered.map(function(p) {
+        var row = {};
+        cols.forEach(function(c) { row[c] = p[c] != null ? p[c] : ''; });
+        return row;
+    });
+
+    var title = 'Player Stats';
+    var parts = [];
+    if (season !== 'all') parts.push(season);
+    if (team !== 'all') parts.push(team);
+    if (nameText) parts.push('"' + nameText + '"');
+    parts.push('sorted by ' + sortBy);
+    if (parts.length) title += ': ' + parts.join(', ');
+    title += ' (' + resultData.length + ' results)';
+
+    renderFinderResults(resultData, title);
+    saveFinderToHistory(title, resultData);
+}
+
+async function runTeamQuery() {
+    var view = _teamViewType;
+    var season = document.getElementById('tf-season').value;
+    var team = document.getElementById('tf-team').value;
+    var matchType = document.querySelector('input[name="tf-matchtype"]:checked').value;
+    var limitVal = document.getElementById('tf-limit').value;
+
+    if (view === 'ladder') {
+        await runTeamLadder(season, team, limitVal);
+    } else if (view === 'results') {
+        await runTeamResults(season, team, matchType, limitVal);
+    } else if (view === 'summary') {
+        await runTeamSummary(season, team, matchType, limitVal);
+    }
+}
+
+async function runTeamLadder(season, team, limitVal) {
+    var standings = await fetchSquiggle('standings', {year: season});
+    if (!standings || !standings.length) { renderFinderResults(null, 'No standings data found for ' + season); return; }
+
+    var data = standings.map(function(s) {
+        return {rank: s.rank, team: s.name, played: s.played, wins: s.wins, losses: s.losses, draws: s.draws, pts: s.pts, percentage: Math.round((s.percentage || 0) * 10) / 10};
+    });
+    data.sort(function(a,b){ return (a.rank||99)-(b.rank||99); });
+
+    if (team !== 'all') {
+        data = data.filter(function(r) { return teamMatchesFilter(r.team, team); });
+    }
+    var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
+    data = data.slice(0, limit);
+
+    var title = season + ' Ladder' + (team !== 'all' ? ' - ' + team : '') + ' (' + data.length + ' teams)';
+    renderFinderResults(data, title);
+    saveFinderToHistory(title, data);
+}
+
+async function runTeamResults(season, team, matchType, limitVal) {
+    var opponent = document.getElementById('tf-opponent').value;
+    var venue = document.querySelector('input[name="tf-venue"]:checked').value;
+    var roundFrom = parseInt(document.getElementById('tf-round-from').value) || 0;
+    var roundTo = parseInt(document.getElementById('tf-round-to').value) || 999;
+
+    var games = await fetchSquiggle('games', {year: season});
+    if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
+
+    var completed = games.filter(function(g) { return g.complete === 100; });
+
+    // Apply filters
+    var filtered = completed.filter(function(g) {
+        // Match type
+        if (matchType === 'finals' && !g.is_final) return false;
+        if (matchType === 'ha' && g.is_final) return false;
+        // Round range (only for non-finals)
+        if (!g.is_final && roundFrom > 0 && (g.round || 0) < roundFrom) return false;
+        if (!g.is_final && roundTo < 999 && (g.round || 0) > roundTo) return false;
+        // Team filter
+        if (team !== 'all') {
+            var isHome = teamMatchesFilter(g.hteam || '', team);
+            var isAway = teamMatchesFilter(g.ateam || '', team);
+            if (!isHome && !isAway) return false;
+            if (venue === 'home' && !isHome) return false;
+            if (venue === 'away' && !isAway) return false;
+        }
+        // Opponent filter
+        if (opponent !== 'all') {
+            var oppHome = teamMatchesFilter(g.hteam || '', opponent);
+            var oppAway = teamMatchesFilter(g.ateam || '', opponent);
+            if (!oppHome && !oppAway) return false;
+        }
+        return true;
+    });
+
+    filtered.sort(function(a,b){ return (a.round||0)-(b.round||0); });
+
+    var data = filtered.map(function(g) {
+        return {
+            round: g.round, type: g.is_final ? 'Final' : 'H&A',
+            home: g.hteam, home_score: (g.hgoals||0)+'.'+(g.hbehinds||0)+' ('+g.hscore+')',
+            away: g.ateam, away_score: (g.agoals||0)+'.'+(g.abehinds||0)+' ('+g.ascore+')',
+            winner: g.winner || '', margin: Math.abs((g.hscore||0)-(g.ascore||0)),
+            date: String(g.date||'').slice(0,10)
+        };
+    });
+
+    var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
+    data = data.slice(0, limit);
+
+    var title = season + ' Match Results';
+    var parts = [];
+    if (team !== 'all') parts.push(team);
+    if (opponent !== 'all') parts.push('vs ' + opponent);
+    if (matchType !== 'all') parts.push(matchType === 'finals' ? 'Finals' : 'H&A');
+    if (parts.length) title += ': ' + parts.join(', ');
+    title += ' (' + data.length + ' matches)';
+
+    renderFinderResults(data, title);
+    saveFinderToHistory(title, data);
+}
+
+async function runTeamSummary(season, team, matchType, limitVal) {
+    var games = await fetchSquiggle('games', {year: season});
+    if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
+
+    var completed = games.filter(function(g) {
+        if (g.complete !== 100) return false;
+        if (matchType === 'finals' && !g.is_final) return false;
+        if (matchType === 'ha' && g.is_final) return false;
+        return true;
+    });
+
+    var teamAgg = {};
+    completed.forEach(function(g) {
+        var ht = g.hteam, at = g.ateam;
+        if (!teamAgg[ht]) teamAgg[ht] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0};
+        if (!teamAgg[at]) teamAgg[at] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0};
+        teamAgg[ht].goals_for += (g.hgoals||0); teamAgg[ht].goals_against += (g.agoals||0);
+        teamAgg[ht].behinds_for += (g.hbehinds||0); teamAgg[ht].behinds_against += (g.abehinds||0);
+        teamAgg[ht].points_for += (g.hscore||0); teamAgg[ht].points_against += (g.ascore||0);
+        teamAgg[ht].games += 1;
+        if ((g.hscore||0) > (g.ascore||0)) teamAgg[ht].wins += 1;
+        teamAgg[at].goals_for += (g.agoals||0); teamAgg[at].goals_against += (g.hgoals||0);
+        teamAgg[at].behinds_for += (g.abehinds||0); teamAgg[at].behinds_against += (g.hbehinds||0);
+        teamAgg[at].points_for += (g.ascore||0); teamAgg[at].points_against += (g.hscore||0);
+        teamAgg[at].games += 1;
+        if ((g.ascore||0) > (g.hscore||0)) teamAgg[at].wins += 1;
+    });
+
+    var data = Object.keys(teamAgg).map(function(t) {
+        var a = teamAgg[t];
+        return {
+            team: t, games: a.games, wins: a.wins,
+            goals_for: a.goals_for, goals_against: a.goals_against,
+            behinds_for: a.behinds_for,
+            points_for: a.points_for, points_against: a.points_against,
+            avg_goals_per_game: Math.round(a.goals_for / a.games * 100) / 100,
+            avg_points_per_game: Math.round(a.points_for / a.games * 100) / 100
+        };
+    });
+    data.sort(function(a,b){ return b.points_for - a.points_for; });
+
+    if (team !== 'all') {
+        data = data.filter(function(r){ return teamMatchesFilter(r.team, team); });
+    }
+    var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
+    data = data.slice(0, limit);
+
+    var title = season + ' Season Summary';
+    if (team !== 'all') title += ': ' + team;
+    if (matchType !== 'all') title += ' (' + (matchType === 'finals' ? 'Finals' : 'H&A') + ')';
+    title += ' (' + data.length + ' teams)';
+
+    renderFinderResults(data, title);
+    saveFinderToHistory(title, data);
+}
+
+function renderFinderResults(data, title) {
+    var el = document.getElementById('finder-results');
+    if (!data || !data.length) {
+        el.innerHTML = '<div class="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-2xl p-5 fade-in"><p class="text-sm text-amber-700 dark:text-amber-400 font-medium">' + escapeHtml(title || 'No results found.') + '</p></div>';
+        el.classList.remove('hidden');
+        return;
+    }
+    var html = '<div class="mt-4 result-card bg-white dark:bg-[#141827] border border-gray-200 dark:border-gray-700/60 rounded-2xl shadow-sm overflow-hidden fade-in">';
+    // Title
+    html += '<div class="px-6 pt-5 pb-3"><p class="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed font-semibold">' + escapeHtml(title) + '</p></div>';
+    // View toggles
+    html += '<div class="mx-6 mb-5">';
+    html += '<div class="flex items-center gap-1 mb-3 flex-wrap">';
+    html += '<button onclick="showView(\'table\',this)" class="view-btn active-view px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>Table</button>';
+    html += '<button onclick="showView(\'bar\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Bar</button>';
+    html += '<button onclick="showView(\'column\',this)" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>Column</button>';
+    html += '<button onclick="exportCSV()" class="view-btn px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1" title="Export as CSV"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Export</button>';
+    html += '</div>';
+    // Table
+    html += '<div id="view-table" class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto" id="table-scroll"></div></div>';
+    // Chart
+    html += '<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-xl p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
+    html += '</div>';
+    // Footer
+    html += '<div class="px-6 py-3 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between bg-gray-50/50 dark:bg-white/[0.01]">';
+    html += '<span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Stat Finder</span>';
+    html += '<span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">' + data.length + ' rows</span>';
+    html += '</div>';
+    html += '</div>';
+
+    el.innerHTML = html;
+    el.classList.remove('hidden');
+
+    window._chartData = data;
+    window._chartInstance = null;
+    window._sortCol = null;
+    window._sortDir = 'asc';
+    rebuildTable();
+}
+
+function saveFinderToHistory(title, data) {
+    if (!data || !data.length) return;
+    var hist = loadHistory();
+    hist.unshift({
+        query: title,
+        answer: 'Found ' + data.length + ' results',
+        data: data,
+        r_code: null,
+        provider: 'stat-finder',
+        ts: Date.now()
+    });
+    if (hist.length > HISTORY_MAX) hist = hist.slice(0, HISTORY_MAX);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+    updateHistoryBadge();
 }
 
 // ── Search handler ──

@@ -147,8 +147,68 @@
             </div>
         </div>
 
+        <!-- Tabs -->
+        <div class="flex items-center gap-1 mb-4" id="main-tabs">
+            <button onclick="showTab('search')" id="tab-search" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-500/10">
+                <svg class="w-3 h-3 inline -mt-0.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.39 6.17H19l-5.3 3.86L15.78 17 10 13.27 4.22 17l2.08-5.97L1 7.17h6.61z"/></svg>Ask AI
+            </button>
+            <button onclick="showTab('finder')" id="tab-finder" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.04]">
+                <svg class="w-3 h-3 inline -mt-0.5 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>Stat Finder
+            </button>
+            <button onclick="showTab('history')" id="tab-history" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.04]">History <span id="history-badge" class="text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hidden">0</span></button>
+        </div>
+
         <div id="results"></div>
+        <div id="finder-view" class="hidden"></div>
+        <div id="finder-results" class="hidden"></div>
+        <div id="history-view" class="hidden"></div>
     </div>
+
+    <style>
+        .tab-btn { cursor: pointer; border: none; }
+        .finder-form { background: white; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; }
+        .dark .finder-form { background: #1a1b23; border-color: rgba(55,65,81,0.6); }
+        .finder-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 0.375rem; }
+        .dark .finder-label { color: #9ca3af; }
+        .finder-input, .finder-select {
+            width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+            font-size: 13px; background: #f9fafb; color: #1f2937; outline: none; transition: border-color 0.15s;
+        }
+        .finder-input:focus, .finder-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+        .dark .finder-input, .dark .finder-select { background: #12131a; border-color: rgba(55,65,81,0.6); color: #e5e7eb; }
+        .finder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .finder-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+        @media (max-width: 480px) { .finder-grid, .finder-grid-3 { grid-template-columns: 1fr; } }
+        .finder-section { margin-bottom: 0.875rem; }
+        .finder-pill { display: inline-flex; align-items: center; padding: 0.375rem 0.875rem; border-radius: 9999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 2px solid #d1d5db; background: transparent; color: #6b7280; }
+        .finder-pill.active { border-color: #3b82f6; background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .dark .finder-pill { border-color: rgba(55,65,81,0.6); color: #9ca3af; }
+        .dark .finder-pill.active { border-color: #60a5fa; background: rgba(96,165,250,0.15); color: #60a5fa; }
+        .finder-checkbox { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 12px; color: #374151; cursor: pointer; margin-right: 0.5rem; margin-bottom: 0.25rem; }
+        .dark .finder-checkbox { color: #d1d5db; }
+        .finder-checkbox input { accent-color: #3b82f6; }
+        .finder-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-size: 14px; font-weight: 700;
+            background: #2563eb; color: white; border: none; cursor: pointer; transition: all 0.15s; width: 100%;
+        }
+        .finder-btn:hover { background: #1d4ed8; }
+        .finder-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .finder-spinner { display: none; }
+        .finder-btn.loading .finder-spinner { display: inline-block; }
+        .finder-btn.loading .finder-btn-text { display: none; }
+        .result-card { border-left: 4px solid #3b82f6; }
+        .view-btn { color: #6b7280; cursor: pointer; border: none; background: none; }
+        .view-btn:hover { background: rgba(59,130,246,0.08); color: #3b82f6; }
+        .active-view { background: rgba(59,130,246,0.1) !important; color: #2563eb !important; font-weight: 600; }
+        .dark .active-view { background: rgba(96,165,250,0.15) !important; color: #60a5fa !important; }
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { background: rgba(255,255,255,0.1); }
+        .sort-arrow { font-size: 9px; margin-left: 3px; opacity: 0.5; }
+        .sort-arrow.active { opacity: 1; }
+        .table-header-row { background: linear-gradient(90deg, #1e3a5f, #2563eb); }
+        .dark .table-header-row { background: linear-gradient(90deg, #1a1b23, #1e3a5f); }
+    </style>
 
     <script>
         document.addEventListener('click', function(e) {
@@ -263,6 +323,211 @@
         });
         updateUI();
         var sk = getApiKey(); if (sk) document.getElementById('api-key-input').value = sk;
+
+        // ── Stat Finder ──
+        var AFL_TEAMS = ['Adelaide','Brisbane Lions','Carlton','Collingwood','Essendon','Fremantle','Geelong','Gold Coast','GWS Giants','Hawthorn','Melbourne','North Melbourne','Port Adelaide','Richmond','St Kilda','Sydney','West Coast','Western Bulldogs'];
+        var PLAYER_STATS = ['games','goals','kicks','marks','handballs','disposals','tackles','behinds'];
+        var SQUIGGLE = 'https://api.squiggle.com.au/';
+        var _finderMode = 'player';
+        var _teamViewType = 'ladder';
+        var _playerStatsCache = null;
+
+        async function fetchSquiggle(endpoint, params) {
+            var url = new URL(SQUIGGLE); url.searchParams.set('q', endpoint);
+            if (params) Object.keys(params).forEach(function(k){ url.searchParams.set(k, params[k]); });
+            try { var r = await fetch(url); if (!r.ok) return []; var d = await r.json(); return d[endpoint] || []; } catch(e) { return []; }
+        }
+        async function fetchPlayerStats() {
+            if (_playerStatsCache) return _playerStatsCache;
+            try { var r = await fetch('/static/player-stats.json'); if (!r.ok) return null; _playerStatsCache = await r.json(); return _playerStatsCache; } catch(e) { return null; }
+        }
+
+        function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function formatColName(k) { return k.replace(/_/g, ' '); }
+
+        function showTab(tab) {
+            var searchTab = document.getElementById('tab-search'), finderTab = document.getElementById('tab-finder'), histTab = document.getElementById('tab-history');
+            var results = document.getElementById('results'), finderView = document.getElementById('finder-view'), finderResults = document.getElementById('finder-results'), histView = document.getElementById('history-view');
+            var form = document.getElementById('search-area'), quickBtns = document.querySelector('.flex.flex-wrap.gap-1\\.5');
+            var inactive = 'tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.04]';
+            var active = 'tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-500/10';
+            searchTab.className = inactive; finderTab.className = inactive; histTab.className = inactive;
+            results.classList.add('hidden'); finderView.classList.add('hidden'); finderResults.classList.add('hidden'); histView.classList.add('hidden');
+            if (form) form.classList.add('hidden');
+            if (quickBtns) quickBtns.classList.add('hidden');
+            if (tab === 'search') { searchTab.className = active; if (form) form.classList.remove('hidden'); if (quickBtns) quickBtns.classList.remove('hidden'); results.classList.remove('hidden'); }
+            else if (tab === 'finder') { finderTab.className = active; finderView.classList.remove('hidden'); finderResults.classList.remove('hidden'); if (!finderView.innerHTML) buildFinderForm(); }
+            else if (tab === 'history') { histTab.className = active; histView.classList.remove('hidden'); renderHistoryList(); }
+        }
+
+        function buildFinderForm() {
+            var el = document.getElementById('finder-view');
+            var currentYear = new Date().getFullYear();
+            var html = '<div class="finder-form">';
+            html += '<div class="flex items-center gap-2 mb-4">';
+            html += '<button type="button" onclick="setFinderMode(\'player\')" id="finder-mode-player" class="finder-pill active">Player Stats</button>';
+            html += '<button type="button" onclick="setFinderMode(\'team\')" id="finder-mode-team" class="finder-pill">Team Stats</button>';
+            html += '</div>';
+            html += '<div id="finder-player-form">' + buildPlayerForm(currentYear) + '</div>';
+            html += '<div id="finder-team-form" style="display:none">' + buildTeamForm(currentYear) + '</div>';
+            html += '</div>';
+            el.innerHTML = html;
+        }
+
+        function buildPlayerForm(currentYear) {
+            var html = '<div class="finder-grid finder-section"><div><label class="finder-label">Season</label><select id="pf-season" class="finder-select"><option value="all">All Years</option>';
+            for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
+            html += '</select></div><div><label class="finder-label">Team</label><select id="pf-team" class="finder-select"><option value="all">All Teams</option>';
+            AFL_TEAMS.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+            html += '</select></div></div>';
+            html += '<div class="finder-section"><label class="finder-label">Player Name</label><div class="flex gap-2"><select id="pf-name-mode" class="finder-select" style="width:auto;min-width:120px"><option value="contains">Contains</option><option value="starts">Starts with</option><option value="letters">Letters in order</option><option value="exact">Exact match</option></select><input type="text" id="pf-name" class="finder-input" placeholder="e.g. Dean, Curnow"></div></div>';
+            html += '<div class="finder-section"><label class="finder-label">Stats to Show</label><div class="flex flex-wrap">';
+            PLAYER_STATS.forEach(function(s){ html += '<label class="finder-checkbox"><input type="checkbox" name="pf-stat" value="'+s+'" checked> '+s.charAt(0).toUpperCase()+s.slice(1)+'</label>'; });
+            html += '</div></div>';
+            html += '<div class="finder-grid-3 finder-section"><div><label class="finder-label">Min Games</label><input type="number" id="pf-mingames" class="finder-input" value="0" min="0"></div>';
+            html += '<div><label class="finder-label">Sort By</label><select id="pf-sort" class="finder-select">';
+            PLAYER_STATS.forEach(function(s){ html += '<option value="'+s+'"'+(s==='goals'?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>'; });
+            html += '</select></div><div><label class="finder-label">Show Top</label><select id="pf-limit" class="finder-select"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="all">All</option></select></div></div>';
+            html += '<div class="finder-section"><label class="finder-label">Order</label><div class="flex gap-2"><label class="finder-checkbox"><input type="radio" name="pf-order" value="desc" checked> Descending</label><label class="finder-checkbox"><input type="radio" name="pf-order" value="asc"> Ascending</label></div></div>';
+            html += '<button type="button" onclick="runFinderQuery()" id="finder-submit" class="finder-btn"><span class="finder-btn-text">Find Stats</span><svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></button>';
+            return html;
+        }
+
+        function buildTeamForm(currentYear) {
+            var html = '<div class="finder-section"><label class="finder-label">View Type</label><div class="flex gap-2"><label class="finder-checkbox"><input type="radio" name="tf-view" value="ladder" checked onchange="onTeamViewChange()"> Ladder</label><label class="finder-checkbox"><input type="radio" name="tf-view" value="results" onchange="onTeamViewChange()"> Match Results</label><label class="finder-checkbox"><input type="radio" name="tf-view" value="summary" onchange="onTeamViewChange()"> Season Summary</label></div></div>';
+            html += '<div class="finder-grid finder-section"><div><label class="finder-label">Season</label><select id="tf-season" class="finder-select">';
+            for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
+            html += '</select></div><div><label class="finder-label">Team</label><select id="tf-team" class="finder-select"><option value="all">All Teams</option>';
+            AFL_TEAMS.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+            html += '</select></div></div>';
+            html += '<div id="tf-opponent-wrap" class="finder-section" style="display:none"><label class="finder-label">Opponent</label><select id="tf-opponent" class="finder-select"><option value="all">All Teams</option>';
+            AFL_TEAMS.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+            html += '</select></div>';
+            html += '<div class="finder-section"><label class="finder-label">Match Type</label><div class="flex gap-2"><label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="all" checked> All</label><label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="ha"> H&A</label><label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="finals"> Finals</label></div></div>';
+            html += '<div id="tf-venue-wrap" class="finder-section" style="display:none"><label class="finder-label">Venue</label><div class="flex gap-2"><label class="finder-checkbox"><input type="radio" name="tf-venue" value="all" checked> All</label><label class="finder-checkbox"><input type="radio" name="tf-venue" value="home"> Home</label><label class="finder-checkbox"><input type="radio" name="tf-venue" value="away"> Away</label></div></div>';
+            html += '<div id="tf-round-wrap" class="finder-grid finder-section" style="display:none"><div><label class="finder-label">From Round</label><input type="number" id="tf-round-from" class="finder-input" placeholder="1" min="1"></div><div><label class="finder-label">To Round</label><input type="number" id="tf-round-to" class="finder-input" placeholder="24" min="1"></div></div>';
+            html += '<div class="finder-grid finder-section"><div><label class="finder-label">Sort By</label><select id="tf-sort" class="finder-select"><option value="auto">Auto</option></select></div><div><label class="finder-label">Show Top</label><select id="tf-limit" class="finder-select"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="all">All</option></select></div></div>';
+            html += '<button type="button" onclick="runFinderQuery()" id="finder-submit-team" class="finder-btn"><span class="finder-btn-text">Find Stats</span><svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></button>';
+            return html;
+        }
+
+        function setFinderMode(mode) { _finderMode = mode; document.getElementById('finder-mode-player').className='finder-pill'+(mode==='player'?' active':''); document.getElementById('finder-mode-team').className='finder-pill'+(mode==='team'?' active':''); document.getElementById('finder-player-form').style.display=mode==='player'?'':'none'; document.getElementById('finder-team-form').style.display=mode==='team'?'':'none'; }
+        function onTeamViewChange() { var v=document.querySelector('input[name="tf-view"]:checked').value; _teamViewType=v; var s=v==='results'; document.getElementById('tf-opponent-wrap').style.display=s?'':'none'; document.getElementById('tf-venue-wrap').style.display=s?'':'none'; document.getElementById('tf-round-wrap').style.display=s?'':'none'; }
+        function matchPlayerName(f,t,m) { var n=f.toLowerCase(),x=t.toLowerCase(); if(!x)return true; if(m==='contains'||m==='letters')return n.indexOf(x)!==-1; if(m==='starts')return n.indexOf(x)===0; if(m==='exact')return n===x; return n.indexOf(x)!==-1; }
+        function teamMatchesFilter(tn,fv) { if(fv==='all')return true; var a=tn.toLowerCase(),b=fv.toLowerCase(); if(a===b||a.indexOf(b)!==-1)return true; if(b==='gws giants'&&(a==='greater western sydney'||a.indexOf('gws')!==-1))return true; if(b==='brisbane lions'&&a.indexOf('brisbane')!==-1)return true; return false; }
+
+        async function runFinderQuery() {
+            var btn=document.getElementById(_finderMode==='player'?'finder-submit':'finder-submit-team'); btn.classList.add('loading'); btn.disabled=true;
+            try { if(_finderMode==='player') await runPlayerQuery(); else await runTeamQuery(); } catch(e) { renderFinderResults(null,'Error: '+e.message); } finally { btn.classList.remove('loading'); btn.disabled=false; }
+        }
+
+        async function runPlayerQuery() {
+            var season=document.getElementById('pf-season').value, team=document.getElementById('pf-team').value;
+            var nameMode=document.getElementById('pf-name-mode').value, nameText=document.getElementById('pf-name').value.trim();
+            var minGames=parseInt(document.getElementById('pf-mingames').value)||0, sortBy=document.getElementById('pf-sort').value;
+            var limitVal=document.getElementById('pf-limit').value, order=document.querySelector('input[name="pf-order"]:checked').value;
+            var statsChecked=[]; document.querySelectorAll('input[name="pf-stat"]:checked').forEach(function(cb){statsChecked.push(cb.value);});
+            if(!statsChecked.length) statsChecked=PLAYER_STATS.slice();
+            var ps=await fetchPlayerStats(); if(!ps){renderFinderResults(null,'Could not load player stats.');return;}
+            var allPlayers=[], years=season==='all'?Object.keys(ps).sort():[season];
+            years.forEach(function(yr){var yd=ps[yr]; if(!yd||!yd.players)return; yd.players.forEach(function(p){var r=Object.assign({},p); if(season==='all')r.season=yr; allPlayers.push(r);});});
+            var filtered=allPlayers.filter(function(p){return matchPlayerName(p.player||'',nameText,nameMode)&&teamMatchesFilter(p.team||'',team)&&(p.games||0)>=minGames;});
+            var dir=order==='desc'?-1:1; filtered.sort(function(a,b){return (Number(a[sortBy]||0)-Number(b[sortBy]||0))*dir;});
+            var limit=limitVal==='all'?filtered.length:parseInt(limitVal); filtered=filtered.slice(0,limit);
+            var cols=['player','team']; if(season==='all')cols.unshift('season'); statsChecked.forEach(function(s){cols.push(s);});
+            var resultData=filtered.map(function(p){var r={}; cols.forEach(function(c){r[c]=p[c]!=null?p[c]:'';});return r;});
+            var title='Player Stats: '+(season!=='all'?season+', ':'')+(team!=='all'?team+', ':'')+'sorted by '+sortBy+' ('+resultData.length+' results)';
+            renderFinderResults(resultData,title); saveFinderToHistory(title,resultData);
+        }
+
+        async function runTeamQuery() {
+            var season=document.getElementById('tf-season').value,team=document.getElementById('tf-team').value,matchType=document.querySelector('input[name="tf-matchtype"]:checked').value,limitVal=document.getElementById('tf-limit').value;
+            if(_teamViewType==='ladder'){var standings=await fetchSquiggle('standings',{year:season}); if(!standings.length){renderFinderResults(null,'No standings for '+season);return;} var data=standings.map(function(s){return{rank:s.rank,team:s.name,played:s.played,wins:s.wins,losses:s.losses,draws:s.draws,pts:s.pts,pct:Math.round((s.percentage||0)*10)/10};}).sort(function(a,b){return(a.rank||99)-(b.rank||99);}); if(team!=='all')data=data.filter(function(r){return teamMatchesFilter(r.team,team);}); var lim=limitVal==='all'?data.length:parseInt(limitVal); data=data.slice(0,lim); renderFinderResults(data,season+' Ladder ('+data.length+' teams)'); saveFinderToHistory(season+' Ladder',data);}
+            else if(_teamViewType==='results'){var opponent=document.getElementById('tf-opponent').value,venue=document.querySelector('input[name="tf-venue"]:checked').value,rf=parseInt(document.getElementById('tf-round-from').value)||0,rt=parseInt(document.getElementById('tf-round-to').value)||999; var games=await fetchSquiggle('games',{year:season}); if(!games.length){renderFinderResults(null,'No games for '+season);return;} var f=games.filter(function(g){if(g.complete!==100)return false; if(matchType==='finals'&&!g.is_final)return false; if(matchType==='ha'&&g.is_final)return false; if(!g.is_final&&rf>0&&(g.round||0)<rf)return false; if(!g.is_final&&rt<999&&(g.round||0)>rt)return false; if(team!=='all'){var ih=teamMatchesFilter(g.hteam||'',team),ia=teamMatchesFilter(g.ateam||'',team); if(!ih&&!ia)return false; if(venue==='home'&&!ih)return false; if(venue==='away'&&!ia)return false;} if(opponent!=='all'){if(!teamMatchesFilter(g.hteam||'',opponent)&&!teamMatchesFilter(g.ateam||'',opponent))return false;} return true;}).sort(function(a,b){return(a.round||0)-(b.round||0);}); var data=f.map(function(g){return{round:g.round,type:g.is_final?'Final':'H&A',home:g.hteam,home_score:(g.hgoals||0)+'.'+(g.hbehinds||0)+' ('+g.hscore+')',away:g.ateam,away_score:(g.agoals||0)+'.'+(g.abehinds||0)+' ('+g.ascore+')',winner:g.winner||'',margin:Math.abs((g.hscore||0)-(g.ascore||0)),date:String(g.date||'').slice(0,10)};}); var lim=limitVal==='all'?data.length:parseInt(limitVal); data=data.slice(0,lim); renderFinderResults(data,season+' Match Results ('+data.length+' matches)'); saveFinderToHistory(season+' Match Results',data);}
+            else{var games=await fetchSquiggle('games',{year:season}); if(!games.length){renderFinderResults(null,'No games for '+season);return;} var ta={}; games.filter(function(g){if(g.complete!==100)return false; if(matchType==='finals'&&!g.is_final)return false; if(matchType==='ha'&&g.is_final)return false; return true;}).forEach(function(g){var h=g.hteam,a=g.ateam; if(!ta[h])ta[h]={gf:0,ga:0,pf:0,pa:0,gm:0,w:0}; if(!ta[a])ta[a]={gf:0,ga:0,pf:0,pa:0,gm:0,w:0}; ta[h].gf+=(g.hgoals||0);ta[h].ga+=(g.agoals||0);ta[h].pf+=(g.hscore||0);ta[h].pa+=(g.ascore||0);ta[h].gm+=1;if((g.hscore||0)>(g.ascore||0))ta[h].w+=1; ta[a].gf+=(g.agoals||0);ta[a].ga+=(g.hgoals||0);ta[a].pf+=(g.ascore||0);ta[a].pa+=(g.hscore||0);ta[a].gm+=1;if((g.ascore||0)>(g.hscore||0))ta[a].w+=1;}); var data=Object.keys(ta).map(function(t){var a=ta[t];return{team:t,games:a.gm,wins:a.w,goals_for:a.gf,goals_against:a.ga,points_for:a.pf,points_against:a.pa,avg_goals:Math.round(a.gf/a.gm*100)/100};}).sort(function(a,b){return b.points_for-a.points_for;}); if(team!=='all')data=data.filter(function(r){return teamMatchesFilter(r.team,team);}); var lim=limitVal==='all'?data.length:parseInt(limitVal); data=data.slice(0,lim); renderFinderResults(data,season+' Season Summary ('+data.length+' teams)'); saveFinderToHistory(season+' Season Summary',data);}
+        }
+
+        window._chartData=null; window._chartInstance=null; window._sortCol=null; window._sortDir='asc';
+
+        function renderFinderResults(data,title) {
+            var el=document.getElementById('finder-results');
+            if(!data||!data.length){el.innerHTML='<div class="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4 fade-in"><p class="text-sm text-amber-700 dark:text-amber-400">'+escapeHtml(title||'No results.')+'</p></div>';el.classList.remove('hidden');return;}
+            var html='<div class="mt-4 result-card bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/60 rounded-xl shadow-sm overflow-hidden fade-in">';
+            html+='<div class="px-5 pt-4 pb-3"><p class="text-sm text-gray-700 dark:text-gray-300 font-semibold">'+escapeHtml(title)+'</p></div>';
+            html+='<div class="mx-5 mb-4"><div class="flex items-center gap-1 mb-2 flex-wrap">';
+            html+='<button onclick="showView(\'table\',this)" class="view-btn active-view px-2 py-1 text-[11px] rounded-md flex items-center gap-1">Table</button>';
+            html+='<button onclick="showView(\'bar\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md flex items-center gap-1">Bar</button>';
+            html+='<button onclick="showView(\'column\',this)" class="view-btn px-2 py-1 text-[11px] rounded-md flex items-center gap-1">Column</button>';
+            html+='<button onclick="exportCSV()" class="view-btn px-2 py-1 text-[11px] rounded-md flex items-center gap-1">Export</button>';
+            html+='</div>';
+            html+='<div id="view-table" class="rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/40"><div class="overflow-x-auto" id="table-scroll"></div></div>';
+            html+='<div id="view-chart" class="hidden border border-gray-100 dark:border-gray-700/40 rounded-lg p-4 bg-white dark:bg-transparent" style="min-height:300px"><canvas id="results-chart"></canvas></div>';
+            html+='</div>';
+            html+='<div class="px-5 py-2 border-t border-gray-100 dark:border-gray-700/30 flex items-center justify-between"><span class="text-[10px] text-gray-400">Stat Finder</span><span class="text-[10px] text-gray-400">'+data.length+' rows</span></div>';
+            html+='</div>';
+            el.innerHTML=html; el.classList.remove('hidden');
+            window._chartData=data; window._chartInstance=null; window._sortCol=null; window._sortDir='asc';
+            rebuildTable();
+        }
+
+        function rebuildTable() {
+            var data=window._chartData; if(!data||!data.length)return; var el=document.getElementById('table-scroll'); if(!el)return;
+            var keys=Object.keys(data[0]); var html='<table class="min-w-full"><thead><tr class="table-header-row">';
+            keys.forEach(function(k){var arrow=window._sortCol===k?'<span class="sort-arrow active">'+(window._sortDir==='asc'?'\u25B2':'\u25BC')+'</span>':'<span class="sort-arrow">\u25B2</span>'; html+='<th class="sort-header px-3 py-2 text-left text-[11px] font-bold text-white uppercase tracking-wider" onclick="sortTable(\''+k.replace(/'/g,"\\'")+'\')">'+escapeHtml(formatColName(k))+arrow+'</th>';});
+            html+='</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/30">';
+            data.forEach(function(row,idx){var bg=idx%2===0?'bg-white dark:bg-transparent':'bg-gray-50/70 dark:bg-white/[0.02]'; html+='<tr class="'+bg+' hover:bg-blue-50/50 dark:hover:bg-brand-500/5 transition-colors">'; var first=true; keys.forEach(function(k){var cls=first?'font-medium text-gray-800 dark:text-gray-200':'text-gray-600 dark:text-gray-400'; html+='<td class="px-3 py-2 text-sm whitespace-nowrap '+cls+'">'+escapeHtml(String(row[k]!=null?row[k]:''))+'</td>'; first=false;}); html+='</tr>';});
+            html+='</tbody><tfoot><tr class="bg-gray-100 dark:bg-white/[0.04] border-t-2 border-gray-300 dark:border-gray-600">'; var first=true;
+            keys.forEach(function(k){if(first){html+='<td class="px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">Total</td>';first=false;return;} var isNum=data.every(function(r){var v=r[k];return v==null||v===''||!isNaN(Number(v));}); var hasAny=data.some(function(r){return r[k]!=null&&r[k]!=='';}); if(isNum&&hasAny){var sum=0;data.forEach(function(r){var v=Number(r[k]);if(!isNaN(v))sum+=v;}); var hasDec=data.some(function(r){var v=r[k];return v!=null&&String(v).indexOf('.')!==-1;}); html+='<td class="px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">'+(hasDec?sum.toFixed(2):sum)+'</td>';}else{html+='<td class="px-3 py-2 text-sm whitespace-nowrap"></td>';}});
+            html+='</tr></tfoot></table>'; el.innerHTML=html;
+        }
+
+        function sortTable(colKey) {
+            var data=window._chartData; if(!data||!data.length)return;
+            if(window._sortCol===colKey){window._sortDir=window._sortDir==='asc'?'desc':'asc';}else{window._sortCol=colKey;window._sortDir='asc';}
+            var dir=window._sortDir==='asc'?1:-1; var isNum=data.every(function(r){var v=r[colKey];return v==null||v===''||!isNaN(Number(v));});
+            data.sort(function(a,b){var va=a[colKey],vb=b[colKey]; if(va==null)va=''; if(vb==null)vb=''; if(isNum)return(Number(va)-Number(vb))*dir; return String(va).localeCompare(String(vb))*dir;});
+            rebuildTable();
+        }
+
+        function exportCSV() {
+            var data=window._chartData; if(!data||!data.length)return; var keys=Object.keys(data[0]);
+            var esc=function(v){var s=String(v==null?'':v); if(s.indexOf(',')!==-1||s.indexOf('"')!==-1||s.indexOf('\n')!==-1)return '"'+s.replace(/"/g,'""')+'"'; return s;};
+            var rows=[keys.map(function(k){return esc(formatColName(k));}).join(',')];
+            data.forEach(function(row){rows.push(keys.map(function(k){return esc(row[k]);}).join(','));});
+            var blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='afl-stats-export.csv'; document.body.appendChild(a);a.click();document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        function showView(view,btn) {
+            document.querySelectorAll('.view-btn').forEach(function(b){b.classList.remove('active-view');}); btn.classList.add('active-view');
+            var t=document.getElementById('view-table'),c=document.getElementById('view-chart');
+            if(view==='table'){t.classList.remove('hidden');c.classList.add('hidden');}else{t.classList.add('hidden');c.classList.remove('hidden');renderChart(view==='column');}
+        }
+        function renderChart(horizontal) {
+            if(!window._chartData||!window._chartData.length)return;
+            if(typeof Chart==='undefined'){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';s.onload=function(){buildChart(horizontal);};document.head.appendChild(s);}else{buildChart(horizontal);}
+        }
+        function buildChart(horizontal) {
+            if(window._chartInstance)window._chartInstance.destroy(); var data=window._chartData,keys=Object.keys(data[0]),lk=keys[0];
+            var labels=data.map(function(r){var v=r[lk];return typeof v==='string'&&v.length>20?v.substring(0,18)+'..':v;});
+            var nk=keys.filter(function(k,i){return i>0&&data.some(function(r){var v=r[k];return typeof v==='number'||(typeof v==='string'&&!isNaN(parseFloat(v))&&isFinite(v));});});
+            if(!nk.length){document.getElementById('view-chart').innerHTML='<p class="text-sm text-gray-400 text-center py-8">No numeric data to chart</p>';return;}
+            var isDark=document.documentElement.classList.contains('dark'),palette=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+            var datasets=nk.map(function(k,i){return{label:k,data:data.map(function(r){return parseFloat(r[k])||0;}),backgroundColor:palette[i%palette.length]+(nk.length===1?'cc':'aa'),borderColor:palette[i%palette.length],borderWidth:1,borderRadius:4};});
+            window._chartInstance=new Chart(document.getElementById('results-chart'),{type:'bar',data:{labels:labels,datasets:datasets},options:{indexAxis:horizontal?'x':'y',responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{font:{size:11},maxRotation:45}},y:{beginAtZero:true,ticks:{font:{size:11}}}}}});
+            document.getElementById('view-chart').style.height=(horizontal?Math.max(300,labels.length*28+60):350)+'px';
+        }
+
+        // History
+        var HISTORY_KEY='afl_search_history', HISTORY_MAX=20;
+        function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch(e){return[];}}
+        function updateHistoryBadge(){var b=document.getElementById('history-badge');if(!b)return;var c=loadHistory().length;b.textContent=c;if(c>0)b.classList.remove('hidden');else b.classList.add('hidden');}
+        function saveFinderToHistory(title,data){if(!data||!data.length)return;var h=loadHistory();h.unshift({query:title,answer:'Found '+data.length+' results',data:data,r_code:null,provider:'stat-finder',ts:Date.now()});if(h.length>HISTORY_MAX)h=h.slice(0,HISTORY_MAX);try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}updateHistoryBadge();}
+        function timeAgo(ts){var s=Math.floor((Date.now()-ts)/1000);if(s<60)return'just now';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+        function renderHistoryList(){var el=document.getElementById('history-view');var h=loadHistory();if(!h.length){el.innerHTML='<div class="text-center py-12 text-gray-400 dark:text-gray-500"><p class="text-sm">No history yet</p></div>';return;}var html='<div class="space-y-2">';h.forEach(function(e,i){var isFinder=e.provider==='stat-finder';var color=isFinder?'#10b981':'#3b82f6';var label=isFinder?'Stat Finder':(e.provider||'AI');var rows=e.data?e.data.length:0;html+='<div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700/40 bg-white dark:bg-[#1a1b23] hover:border-brand-500/30 transition-all cursor-pointer group" onclick="loadHistoryEntry('+i+')">';html+='<div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">'+escapeHtml(e.query)+'</p>';html+='<div class="flex items-center gap-2 mt-1"><span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style="background:'+color+'20;color:'+color+'">'+label+'</span>';html+='<span class="text-[10px] text-gray-400">'+rows+' rows</span><span class="text-[10px] text-gray-400">'+timeAgo(e.ts)+'</span>';html+='</div></div>';html+='<button onclick="event.stopPropagation();deleteHistoryEntry('+i+')" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>';});html+='</div><div class="text-center mt-4"><button onclick="clearHistory()" class="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear all</button></div>';el.innerHTML=html;}
+        function loadHistoryEntry(i){var h=loadHistory();var e=h[i];if(!e)return;if(e.provider==='stat-finder'){showTab('finder');renderFinderResults(e.data,e.query);}else{showTab('search');}}
+        function deleteHistoryEntry(i){var h=loadHistory();h.splice(i,1);try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}updateHistoryBadge();renderHistoryList();}
+        function clearHistory(){try{localStorage.removeItem(HISTORY_KEY);}catch(e){}updateHistoryBadge();renderHistoryList();}
+        updateHistoryBadge();
     </script>
 </body>
 </html>
