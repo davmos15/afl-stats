@@ -1227,6 +1227,14 @@ var AFL_TEAMS = [
 ];
 var AFL_TEAMS_DISPLAY = AFL_TEAMS.filter(function(t){ return t !== 'Greater Western Sydney'; });
 
+var AFL_GROUNDS = [
+    'M.C.G.', 'Marvel Stadium', 'Adelaide Oval', 'Optus Stadium', 'Gabba',
+    'S.C.G.', 'GIANTS Stadium', 'GMHBA Stadium', 'Blundstone Arena',
+    'University of Tasmania Stadium', 'Manuka Oval', 'Mars Stadium',
+    'TIO Stadium', 'TIO Traeger Park', 'People First Stadium',
+    'Heritage Bank Stadium', 'Norwood Oval'
+];
+
 var PLAYER_STATS = ['games','goals','kicks','marks','handballs','disposals','tackles','behinds'];
 
 var _finderMode = 'player';
@@ -1289,6 +1297,10 @@ function buildPlayerForm(currentYear) {
         html += '<label class="finder-checkbox"><input type="checkbox" name="pf-stat" value="'+s+'" checked> '+label+'</label>';
     });
     html += '</div></div>';
+    // Per-game averages toggle
+    html += '<div class="finder-section">';
+    html += '<label class="finder-checkbox"><input type="checkbox" id="pf-averages"> Show per-game averages</label>';
+    html += '</div>';
     // Min games, Sort, Limit
     html += '<div class="finder-grid-3 finder-section">';
     html += '<div><label class="finder-label">Min Games</label>';
@@ -1372,6 +1384,16 @@ function buildTeamForm(currentYear) {
     html += '<div><label class="finder-label">To Round</label>';
     html += '<input type="number" id="tf-round-to" class="finder-input" placeholder="24" min="1"></div>';
     html += '</div>';
+    // Ground (match results + season summary)
+    html += '<div id="tf-ground-wrap" class="finder-section" style="display:none">';
+    html += '<label class="finder-label">Ground</label>';
+    html += '<select id="tf-ground" class="finder-select" onchange="onGroundSelectChange()">';
+    html += '<option value="all">All Grounds</option>';
+    AFL_GROUNDS.forEach(function(g){ html += '<option value="'+g+'">'+g+'</option>'; });
+    html += '<option value="__other">Other (type below)</option>';
+    html += '</select>';
+    html += '<input type="text" id="tf-ground-custom" class="finder-input" style="display:none;margin-top:0.375rem" placeholder="Type venue name...">';
+    html += '</div>';
     // Sort & Limit
     html += '<div class="finder-grid finder-section">';
     html += '<div><label class="finder-label">Sort By</label>';
@@ -1403,9 +1425,33 @@ function onTeamViewChange() {
     var view = document.querySelector('input[name="tf-view"]:checked').value;
     _teamViewType = view;
     var showResults = view === 'results';
+    var showGround = view === 'results' || view === 'summary';
     document.getElementById('tf-opponent-wrap').style.display = showResults ? '' : 'none';
     document.getElementById('tf-venue-wrap').style.display = showResults ? '' : 'none';
     document.getElementById('tf-round-wrap').style.display = showResults ? '' : 'none';
+    document.getElementById('tf-ground-wrap').style.display = showGround ? '' : 'none';
+}
+
+function onGroundSelectChange() {
+    var sel = document.getElementById('tf-ground');
+    var custom = document.getElementById('tf-ground-custom');
+    if (sel && custom) custom.style.display = sel.value === '__other' ? '' : 'none';
+}
+
+function getGroundFilter() {
+    var sel = document.getElementById('tf-ground');
+    if (!sel || sel.value === 'all') return null;
+    if (sel.value === '__other') {
+        var custom = document.getElementById('tf-ground-custom');
+        return custom && custom.value.trim() ? custom.value.trim() : null;
+    }
+    return sel.value;
+}
+
+function matchesGround(gameVenue, filter) {
+    if (!filter) return true;
+    if (!gameVenue) return false;
+    return gameVenue.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
 }
 
 function matchPlayerName(fullName, text, mode) {
@@ -1461,6 +1507,7 @@ async function runPlayerQuery() {
     var statsChecked = [];
     document.querySelectorAll('input[name="pf-stat"]:checked').forEach(function(cb){ statsChecked.push(cb.value); });
     if (!statsChecked.length) statsChecked = PLAYER_STATS.slice();
+    var showAverages = document.getElementById('pf-averages') && document.getElementById('pf-averages').checked;
 
     var ps = await fetchPlayerStats();
     if (!ps) { renderFinderResults(null, 'Could not load player stats data.'); return; }
@@ -1490,13 +1537,23 @@ async function runPlayerQuery() {
         return true;
     });
 
-    // Sort
+    // Sort (supports per-game average sorting when averages enabled)
     var dir = order === 'desc' ? -1 : 1;
-    filtered.sort(function(a, b) {
-        var va = a[sortBy], vb = b[sortBy];
-        if (va == null) va = 0; if (vb == null) vb = 0;
-        return (Number(va) - Number(vb)) * dir;
-    });
+    var sortFn;
+    if (showAverages && sortBy !== 'games') {
+        sortFn = function(a, b) {
+            var ga = a.games || 1, gb = b.games || 1;
+            var va = (a[sortBy] || 0) / ga, vb = (b[sortBy] || 0) / gb;
+            return (va - vb) * dir;
+        };
+    } else {
+        sortFn = function(a, b) {
+            var va = a[sortBy], vb = b[sortBy];
+            if (va == null) va = 0; if (vb == null) vb = 0;
+            return (Number(va) - Number(vb)) * dir;
+        };
+    }
+    filtered.sort(sortFn);
 
     // Limit
     var limit = limitVal === 'all' ? filtered.length : parseInt(limitVal);
@@ -1506,9 +1563,20 @@ async function runPlayerQuery() {
     var cols = ['player', 'team'];
     if (season === 'all') cols.splice(0, 0, 'season');
     statsChecked.forEach(function(s) { cols.push(s); });
+    // Add per-game average columns
+    var avgStats = showAverages ? statsChecked.filter(function(s){ return s !== 'games'; }) : [];
+    avgStats.forEach(function(s) { cols.push(s + '_per_game'); });
     var resultData = filtered.map(function(p) {
         var row = {};
-        cols.forEach(function(c) { row[c] = p[c] != null ? p[c] : ''; });
+        cols.forEach(function(c) {
+            if (c.endsWith('_per_game')) {
+                var base = c.replace('_per_game', '');
+                var gm = p.games || 1;
+                row[c] = Math.round(((p[base] || 0) / gm) * 100) / 100;
+            } else {
+                row[c] = p[c] != null ? p[c] : '';
+            }
+        });
         return row;
     });
 
@@ -1566,6 +1634,7 @@ async function runTeamResults(season, team, matchType, limitVal) {
     var venue = document.querySelector('input[name="tf-venue"]:checked').value;
     var roundFrom = parseInt(document.getElementById('tf-round-from').value) || 0;
     var roundTo = parseInt(document.getElementById('tf-round-to').value) || 999;
+    var groundFilter = getGroundFilter();
 
     var games = await fetchSquiggle('games', {year: season});
     if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
@@ -1580,6 +1649,8 @@ async function runTeamResults(season, team, matchType, limitVal) {
         // Round range (only for non-finals)
         if (!g.is_final && roundFrom > 0 && (g.round || 0) < roundFrom) return false;
         if (!g.is_final && roundTo < 999 && (g.round || 0) > roundTo) return false;
+        // Ground filter
+        if (!matchesGround(g.venue, groundFilter)) return false;
         // Team filter
         if (team !== 'all') {
             var isHome = teamMatchesFilter(g.hteam || '', team);
@@ -1602,6 +1673,7 @@ async function runTeamResults(season, team, matchType, limitVal) {
     var data = filtered.map(function(g) {
         return {
             round: g.round, type: g.is_final ? 'Final' : 'H&A',
+            ground: g.venue || '',
             home: g.hteam, home_score: (g.hgoals||0)+'.'+(g.hbehinds||0)+' ('+g.hscore+')',
             away: g.ateam, away_score: (g.agoals||0)+'.'+(g.abehinds||0)+' ('+g.ascore+')',
             winner: g.winner || '', margin: Math.abs((g.hscore||0)-(g.ascore||0)),
@@ -1617,6 +1689,7 @@ async function runTeamResults(season, team, matchType, limitVal) {
     if (team !== 'all') parts.push(team);
     if (opponent !== 'all') parts.push('vs ' + opponent);
     if (matchType !== 'all') parts.push(matchType === 'finals' ? 'Finals' : 'H&A');
+    if (groundFilter) parts.push('at ' + groundFilter);
     if (parts.length) title += ': ' + parts.join(', ');
     title += ' (' + data.length + ' matches)';
 
@@ -1625,6 +1698,7 @@ async function runTeamResults(season, team, matchType, limitVal) {
 }
 
 async function runTeamSummary(season, team, matchType, limitVal) {
+    var groundFilter = getGroundFilter();
     var games = await fetchSquiggle('games', {year: season});
     if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
 
@@ -1632,6 +1706,7 @@ async function runTeamSummary(season, team, matchType, limitVal) {
         if (g.complete !== 100) return false;
         if (matchType === 'finals' && !g.is_final) return false;
         if (matchType === 'ha' && g.is_final) return false;
+        if (!matchesGround(g.venue, groundFilter)) return false;
         return true;
     });
 
@@ -1673,7 +1748,10 @@ async function runTeamSummary(season, team, matchType, limitVal) {
 
     var title = season + ' Season Summary';
     if (team !== 'all') title += ': ' + team;
-    if (matchType !== 'all') title += ' (' + (matchType === 'finals' ? 'Finals' : 'H&A') + ')';
+    var qualifiers = [];
+    if (matchType !== 'all') qualifiers.push(matchType === 'finals' ? 'Finals' : 'H&A');
+    if (groundFilter) qualifiers.push('at ' + groundFilter);
+    if (qualifiers.length) title += ' (' + qualifiers.join(', ') + ')';
     title += ' (' + data.length + ' teams)';
 
     renderFinderResults(data, title);
