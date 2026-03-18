@@ -1235,6 +1235,18 @@ var AFL_GROUNDS = [
     'Heritage Bank Stadium', 'Norwood Oval'
 ];
 
+var GROUND_STATES = {
+    'M.C.G.':'VIC', 'Marvel Stadium':'VIC', 'GMHBA Stadium':'VIC', 'Mars Stadium':'VIC',
+    'Adelaide Oval':'SA', 'Norwood Oval':'SA',
+    'Optus Stadium':'WA',
+    'Gabba':'QLD', 'People First Stadium':'QLD', 'Heritage Bank Stadium':'QLD',
+    'S.C.G.':'NSW', 'GIANTS Stadium':'NSW',
+    'Blundstone Arena':'TAS', 'University of Tasmania Stadium':'TAS',
+    'TIO Stadium':'NT', 'TIO Traeger Park':'NT',
+    'Manuka Oval':'ACT'
+};
+var AFL_STATES = ['VIC','SA','WA','QLD','NSW','TAS','NT','ACT'];
+
 var PLAYER_STATS = ['games','goals','kicks','marks','handballs','disposals','tackles','behinds'];
 
 var _finderMode = 'player';
@@ -1248,6 +1260,11 @@ function buildFinderForm() {
     html += '<div class="flex items-center gap-2 mb-4">';
     html += '<button type="button" onclick="setFinderMode(\'player\')" id="finder-mode-player" class="finder-pill active">Player Stats</button>';
     html += '<button type="button" onclick="setFinderMode(\'team\')" id="finder-mode-team" class="finder-pill">Team Stats</button>';
+    html += '</div>';
+    // Data source info
+    html += '<div class="text-[10px] text-gray-400 dark:text-gray-500 mb-3 -mt-2">';
+    html += '<span id="finder-source-player">Player data: 2025\u2013' + currentYear + ' seasons (AFL Tables, updated daily)</span>';
+    html += '<span id="finder-source-team" style="display:none">Team data: 2012\u2013' + currentYear + ' seasons (Squiggle API, live)</span>';
     html += '</div>';
     // Player form
     html += '<div id="finder-player-form">';
@@ -1297,9 +1314,10 @@ function buildPlayerForm(currentYear) {
         html += '<label class="finder-checkbox"><input type="checkbox" name="pf-stat" value="'+s+'" checked> '+label+'</label>';
     });
     html += '</div></div>';
-    // Per-game averages toggle
+    // Per-game averages toggle + match type note
     html += '<div class="finder-section">';
     html += '<label class="finder-checkbox"><input type="checkbox" id="pf-averages"> Show per-game averages</label>';
+    html += '<span class="text-[10px] text-gray-400 dark:text-gray-500 ml-2">Note: Player stats include all match types (H&A + Finals combined)</span>';
     html += '</div>';
     // Min games, Sort, Limit
     html += '<div class="finder-grid-3 finder-section">';
@@ -1326,7 +1344,7 @@ function buildPlayerForm(currentYear) {
     html += '</div></div>';
     // Submit
     html += '<button type="button" onclick="runFinderQuery()" id="finder-submit" class="finder-btn">';
-    html += '<span class="finder-btn-text"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Find Stats</span>';
+    html += '<span class="finder-btn-text">Find Stats <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></span>';
     html += '<svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
     html += '</button>';
     return html;
@@ -1337,7 +1355,7 @@ function buildTeamForm(currentYear) {
     // View type
     html += '<div class="finder-section">';
     html += '<label class="finder-label">View Type</label>';
-    html += '<div class="flex gap-2">';
+    html += '<div class="flex gap-2 flex-wrap">';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="ladder" checked onchange="onTeamViewChange()"> Ladder</label>';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="results" onchange="onTeamViewChange()"> Match Results</label>';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-view" value="summary" onchange="onTeamViewChange()"> Season Summary</label>';
@@ -1345,13 +1363,25 @@ function buildTeamForm(currentYear) {
     // Season + Team row
     html += '<div class="finder-grid finder-section">';
     html += '<div><label class="finder-label">Season</label>';
-    html += '<select id="tf-season" class="finder-select">';
+    html += '<select id="tf-season" class="finder-select" onchange="onTeamSeasonChange()">';
+    html += '<option value="all">All Years (2012\u2013' + currentYear + ')</option>';
     for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
     html += '</select></div>';
     html += '<div><label class="finder-label">Team</label>';
     html += '<select id="tf-team" class="finder-select">';
     html += '<option value="all">All Teams</option>';
     AFL_TEAMS_DISPLAY.forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+    html += '</select></div>';
+    html += '</div>';
+    // Season range (shown when "All Years" selected)
+    html += '<div id="tf-year-range" class="finder-grid finder-section" style="display:none">';
+    html += '<div><label class="finder-label">From Year</label>';
+    html += '<select id="tf-year-from" class="finder-select">';
+    for (var y = 2012; y <= currentYear; y++) html += '<option value="'+y+'">'+y+'</option>';
+    html += '</select></div>';
+    html += '<div><label class="finder-label">To Year</label>';
+    html += '<select id="tf-year-to" class="finder-select">';
+    for (var y = currentYear; y >= 2012; y--) html += '<option value="'+y+'"'+(y===currentYear?' selected':'')+'>'+y+'</option>';
     html += '</select></div>';
     html += '</div>';
     // Opponent (match results only)
@@ -1369,30 +1399,36 @@ function buildTeamForm(currentYear) {
     html += '<label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="ha"> Home & Away</label>';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-matchtype" value="finals"> Finals</label>';
     html += '</div></div>';
-    // Venue (match results only)
+    // Venue home/away (match results only)
     html += '<div id="tf-venue-wrap" class="finder-section" style="display:none">';
-    html += '<label class="finder-label">Venue</label>';
+    html += '<label class="finder-label">Home / Away</label>';
     html += '<div class="flex gap-2">';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="all" checked> All</label>';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="home"> Home only</label>';
     html += '<label class="finder-checkbox"><input type="radio" name="tf-venue" value="away"> Away only</label>';
     html += '</div></div>';
-    // Round (match results only)
-    html += '<div id="tf-round-wrap" class="finder-grid finder-section" style="display:none">';
-    html += '<div><label class="finder-label">From Round</label>';
-    html += '<input type="number" id="tf-round-from" class="finder-input" placeholder="1" min="1"></div>';
-    html += '<div><label class="finder-label">To Round</label>';
-    html += '<input type="number" id="tf-round-to" class="finder-input" placeholder="24" min="1"></div>';
-    html += '</div>';
-    // Ground (match results + season summary)
-    html += '<div id="tf-ground-wrap" class="finder-section" style="display:none">';
-    html += '<label class="finder-label">Ground</label>';
+    // Ground + State row
+    html += '<div id="tf-ground-wrap" class="finder-grid finder-section">';
+    html += '<div><label class="finder-label">Ground</label>';
     html += '<select id="tf-ground" class="finder-select" onchange="onGroundSelectChange()">';
     html += '<option value="all">All Grounds</option>';
     AFL_GROUNDS.forEach(function(g){ html += '<option value="'+g+'">'+g+'</option>'; });
     html += '<option value="__other">Other (type below)</option>';
     html += '</select>';
     html += '<input type="text" id="tf-ground-custom" class="finder-input" style="display:none;margin-top:0.375rem" placeholder="Type venue name...">';
+    html += '</div>';
+    html += '<div><label class="finder-label">State</label>';
+    html += '<select id="tf-state" class="finder-select">';
+    html += '<option value="all">All States</option>';
+    AFL_STATES.forEach(function(s){ html += '<option value="'+s+'">'+s+'</option>'; });
+    html += '</select></div>';
+    html += '</div>';
+    // Round (match results only)
+    html += '<div id="tf-round-wrap" class="finder-grid finder-section" style="display:none">';
+    html += '<div><label class="finder-label">From Round</label>';
+    html += '<input type="number" id="tf-round-from" class="finder-input" placeholder="1" min="1"></div>';
+    html += '<div><label class="finder-label">To Round</label>';
+    html += '<input type="number" id="tf-round-to" class="finder-input" placeholder="24" min="1"></div>';
     html += '</div>';
     // Sort & Limit
     html += '<div class="finder-grid finder-section">';
@@ -1407,7 +1443,7 @@ function buildTeamForm(currentYear) {
     html += '</div>';
     // Submit
     html += '<button type="button" onclick="runFinderQuery()" id="finder-submit-team" class="finder-btn">';
-    html += '<span class="finder-btn-text"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Find Stats</span>';
+    html += '<span class="finder-btn-text">Find Stats <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></span>';
     html += '<svg class="finder-spinner w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>';
     html += '</button>';
     return html;
@@ -1419,17 +1455,26 @@ function setFinderMode(mode) {
     document.getElementById('finder-mode-team').className = 'finder-pill' + (mode==='team' ? ' active' : '');
     document.getElementById('finder-player-form').style.display = mode==='player' ? '' : 'none';
     document.getElementById('finder-team-form').style.display = mode==='team' ? '' : 'none';
+    document.getElementById('finder-source-player').style.display = mode==='player' ? '' : 'none';
+    document.getElementById('finder-source-team').style.display = mode==='team' ? '' : 'none';
 }
 
 function onTeamViewChange() {
     var view = document.querySelector('input[name="tf-view"]:checked').value;
     _teamViewType = view;
     var showResults = view === 'results';
-    var showGround = view === 'results' || view === 'summary';
     document.getElementById('tf-opponent-wrap').style.display = showResults ? '' : 'none';
     document.getElementById('tf-venue-wrap').style.display = showResults ? '' : 'none';
     document.getElementById('tf-round-wrap').style.display = showResults ? '' : 'none';
-    document.getElementById('tf-ground-wrap').style.display = showGround ? '' : 'none';
+    // Ground + State always visible for all views
+}
+
+function onTeamSeasonChange() {
+    var sel = document.getElementById('tf-season');
+    var rangeDiv = document.getElementById('tf-year-range');
+    if (sel && rangeDiv) {
+        rangeDiv.style.display = sel.value === 'all' ? '' : 'none';
+    }
 }
 
 function onGroundSelectChange() {
@@ -1452,6 +1497,34 @@ function matchesGround(gameVenue, filter) {
     if (!filter) return true;
     if (!gameVenue) return false;
     return gameVenue.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
+}
+
+function getStateFilter() {
+    var sel = document.getElementById('tf-state');
+    if (!sel || sel.value === 'all') return null;
+    return sel.value;
+}
+
+function matchesState(gameVenue, stateFilter) {
+    if (!stateFilter) return true;
+    if (!gameVenue) return false;
+    // Check mapped states first
+    var mapped = GROUND_STATES[gameVenue];
+    if (mapped) return mapped === stateFilter;
+    // For unknown venues, try partial match on state abbreviation in name
+    return false;
+}
+
+function getTeamYears() {
+    var season = document.getElementById('tf-season').value;
+    var currentYear = new Date().getFullYear();
+    if (season !== 'all') return [parseInt(season)];
+    var from = parseInt(document.getElementById('tf-year-from').value) || 2012;
+    var to = parseInt(document.getElementById('tf-year-to').value) || currentYear;
+    if (from > to) { var tmp = from; from = to; to = tmp; }
+    var years = [];
+    for (var y = from; y <= to; y++) years.push(y);
+    return years;
 }
 
 function matchPlayerName(fullName, text, mode) {
@@ -1595,63 +1668,85 @@ async function runPlayerQuery() {
 
 async function runTeamQuery() {
     var view = _teamViewType;
-    var season = document.getElementById('tf-season').value;
     var team = document.getElementById('tf-team').value;
     var matchType = document.querySelector('input[name="tf-matchtype"]:checked').value;
     var limitVal = document.getElementById('tf-limit').value;
 
     if (view === 'ladder') {
-        await runTeamLadder(season, team, limitVal);
+        await runTeamLadder(team, limitVal);
     } else if (view === 'results') {
-        await runTeamResults(season, team, matchType, limitVal);
+        await runTeamResults(team, matchType, limitVal);
     } else if (view === 'summary') {
-        await runTeamSummary(season, team, matchType, limitVal);
+        await runTeamSummary(team, matchType, limitVal);
     }
 }
 
-async function runTeamLadder(season, team, limitVal) {
-    var standings = await fetchSquiggle('standings', {year: season});
-    if (!standings || !standings.length) { renderFinderResults(null, 'No standings data found for ' + season); return; }
+async function runTeamLadder(team, limitVal) {
+    var years = getTeamYears();
+    // Ladder only makes sense for single years (standings are per-season)
+    // For multi-year, show each year's standings combined with a season column
+    var allData = [];
+    for (var i = 0; i < years.length; i++) {
+        var standings = await fetchSquiggle('standings', {year: years[i]});
+        if (!standings || !standings.length) continue;
+        standings.forEach(function(s) {
+            var row = {
+                rank: s.rank, team: s.name, played: s.played, wins: s.wins,
+                losses: s.losses, draws: s.draws, pts: s.pts,
+                percentage: Math.round((s.percentage || 0) * 10) / 10
+            };
+            if (years.length > 1) row.season = years[i];
+            allData.push(row);
+        });
+    }
+    if (!allData.length) { renderFinderResults(null, 'No standings data found'); return; }
 
-    var data = standings.map(function(s) {
-        return {rank: s.rank, team: s.name, played: s.played, wins: s.wins, losses: s.losses, draws: s.draws, pts: s.pts, percentage: Math.round((s.percentage || 0) * 10) / 10};
+    allData.sort(function(a,b){
+        if (years.length > 1) { var yd = (b.season||0)-(a.season||0); if (yd) return yd; }
+        return (a.rank||99)-(b.rank||99);
     });
-    data.sort(function(a,b){ return (a.rank||99)-(b.rank||99); });
 
     if (team !== 'all') {
-        data = data.filter(function(r) { return teamMatchesFilter(r.team, team); });
+        allData = allData.filter(function(r) { return teamMatchesFilter(r.team, team); });
     }
-    var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
-    data = data.slice(0, limit);
+    var limit = limitVal === 'all' ? allData.length : parseInt(limitVal);
+    allData = allData.slice(0, limit);
 
-    var title = season + ' Ladder' + (team !== 'all' ? ' - ' + team : '') + ' (' + data.length + ' teams)';
-    renderFinderResults(data, title);
-    saveFinderToHistory(title, data);
+    var seasonLabel = years.length === 1 ? String(years[0]) : years[0] + '\u2013' + years[years.length-1];
+    var title = seasonLabel + ' Ladder' + (team !== 'all' ? ' - ' + team : '') + ' (' + allData.length + ' rows)';
+    renderFinderResults(allData, title);
+    saveFinderToHistory(title, allData);
 }
 
-async function runTeamResults(season, team, matchType, limitVal) {
+async function runTeamResults(team, matchType, limitVal) {
     var opponent = document.getElementById('tf-opponent').value;
     var venue = document.querySelector('input[name="tf-venue"]:checked').value;
     var roundFrom = parseInt(document.getElementById('tf-round-from').value) || 0;
     var roundTo = parseInt(document.getElementById('tf-round-to').value) || 999;
     var groundFilter = getGroundFilter();
+    var stateFilter = getStateFilter();
+    var years = getTeamYears();
 
-    var games = await fetchSquiggle('games', {year: season});
-    if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
+    var allGames = [];
+    for (var i = 0; i < years.length; i++) {
+        var games = await fetchSquiggle('games', {year: years[i]});
+        if (games && games.length) {
+            games.forEach(function(g) { g._year = years[i]; });
+            allGames = allGames.concat(games);
+        }
+    }
+    if (!allGames.length) { renderFinderResults(null, 'No games data found'); return; }
 
-    var completed = games.filter(function(g) { return g.complete === 100; });
+    var completed = allGames.filter(function(g) { return g.complete === 100; });
 
     // Apply filters
     var filtered = completed.filter(function(g) {
-        // Match type
         if (matchType === 'finals' && !g.is_final) return false;
         if (matchType === 'ha' && g.is_final) return false;
-        // Round range (only for non-finals)
         if (!g.is_final && roundFrom > 0 && (g.round || 0) < roundFrom) return false;
         if (!g.is_final && roundTo < 999 && (g.round || 0) > roundTo) return false;
-        // Ground filter
         if (!matchesGround(g.venue, groundFilter)) return false;
-        // Team filter
+        if (!matchesState(g.venue, stateFilter)) return false;
         if (team !== 'all') {
             var isHome = teamMatchesFilter(g.hteam || '', team);
             var isAway = teamMatchesFilter(g.ateam || '', team);
@@ -1659,7 +1754,6 @@ async function runTeamResults(season, team, matchType, limitVal) {
             if (venue === 'home' && !isHome) return false;
             if (venue === 'away' && !isAway) return false;
         }
-        // Opponent filter
         if (opponent !== 'all') {
             var oppHome = teamMatchesFilter(g.hteam || '', opponent);
             var oppAway = teamMatchesFilter(g.ateam || '', opponent);
@@ -1668,10 +1762,13 @@ async function runTeamResults(season, team, matchType, limitVal) {
         return true;
     });
 
-    filtered.sort(function(a,b){ return (a.round||0)-(b.round||0); });
+    filtered.sort(function(a,b){
+        var yd = (a._year||0)-(b._year||0); if (yd) return yd;
+        return (a.round||0)-(b.round||0);
+    });
 
     var data = filtered.map(function(g) {
-        return {
+        var row = {
             round: g.round, type: g.is_final ? 'Final' : 'H&A',
             ground: g.venue || '',
             home: g.hteam, home_score: (g.hgoals||0)+'.'+(g.hbehinds||0)+' ('+g.hscore+')',
@@ -1679,17 +1776,21 @@ async function runTeamResults(season, team, matchType, limitVal) {
             winner: g.winner || '', margin: Math.abs((g.hscore||0)-(g.ascore||0)),
             date: String(g.date||'').slice(0,10)
         };
+        if (years.length > 1) row.season = g._year;
+        return row;
     });
 
     var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
     data = data.slice(0, limit);
 
-    var title = season + ' Match Results';
+    var seasonLabel = years.length === 1 ? String(years[0]) : years[0] + '\u2013' + years[years.length-1];
+    var title = seasonLabel + ' Match Results';
     var parts = [];
     if (team !== 'all') parts.push(team);
     if (opponent !== 'all') parts.push('vs ' + opponent);
     if (matchType !== 'all') parts.push(matchType === 'finals' ? 'Finals' : 'H&A');
     if (groundFilter) parts.push('at ' + groundFilter);
+    if (stateFilter) parts.push('in ' + stateFilter);
     if (parts.length) title += ': ' + parts.join(', ');
     title += ' (' + data.length + ' matches)';
 
@@ -1697,40 +1798,53 @@ async function runTeamResults(season, team, matchType, limitVal) {
     saveFinderToHistory(title, data);
 }
 
-async function runTeamSummary(season, team, matchType, limitVal) {
+async function runTeamSummary(team, matchType, limitVal) {
     var groundFilter = getGroundFilter();
-    var games = await fetchSquiggle('games', {year: season});
-    if (!games || !games.length) { renderFinderResults(null, 'No games data found for ' + season); return; }
+    var stateFilter = getStateFilter();
+    var years = getTeamYears();
 
-    var completed = games.filter(function(g) {
+    var allGames = [];
+    for (var i = 0; i < years.length; i++) {
+        var games = await fetchSquiggle('games', {year: years[i]});
+        if (games && games.length) allGames = allGames.concat(games);
+    }
+    if (!allGames.length) { renderFinderResults(null, 'No games data found'); return; }
+
+    var completed = allGames.filter(function(g) {
         if (g.complete !== 100) return false;
         if (matchType === 'finals' && !g.is_final) return false;
         if (matchType === 'ha' && g.is_final) return false;
         if (!matchesGround(g.venue, groundFilter)) return false;
+        if (!matchesState(g.venue, stateFilter)) return false;
         return true;
     });
 
     var teamAgg = {};
     completed.forEach(function(g) {
         var ht = g.hteam, at = g.ateam;
-        if (!teamAgg[ht]) teamAgg[ht] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0};
-        if (!teamAgg[at]) teamAgg[at] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0};
+        if (!teamAgg[ht]) teamAgg[ht] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0, losses:0, draws:0};
+        if (!teamAgg[at]) teamAgg[at] = {goals_for:0, goals_against:0, behinds_for:0, behinds_against:0, points_for:0, points_against:0, games:0, wins:0, losses:0, draws:0};
         teamAgg[ht].goals_for += (g.hgoals||0); teamAgg[ht].goals_against += (g.agoals||0);
         teamAgg[ht].behinds_for += (g.hbehinds||0); teamAgg[ht].behinds_against += (g.abehinds||0);
         teamAgg[ht].points_for += (g.hscore||0); teamAgg[ht].points_against += (g.ascore||0);
         teamAgg[ht].games += 1;
         if ((g.hscore||0) > (g.ascore||0)) teamAgg[ht].wins += 1;
+        else if ((g.hscore||0) < (g.ascore||0)) teamAgg[ht].losses += 1;
+        else teamAgg[ht].draws += 1;
         teamAgg[at].goals_for += (g.agoals||0); teamAgg[at].goals_against += (g.hgoals||0);
         teamAgg[at].behinds_for += (g.abehinds||0); teamAgg[at].behinds_against += (g.hbehinds||0);
         teamAgg[at].points_for += (g.ascore||0); teamAgg[at].points_against += (g.hscore||0);
         teamAgg[at].games += 1;
         if ((g.ascore||0) > (g.hscore||0)) teamAgg[at].wins += 1;
+        else if ((g.ascore||0) < (g.hscore||0)) teamAgg[at].losses += 1;
+        else teamAgg[at].draws += 1;
     });
 
     var data = Object.keys(teamAgg).map(function(t) {
         var a = teamAgg[t];
         return {
-            team: t, games: a.games, wins: a.wins,
+            team: t, games: a.games, wins: a.wins, losses: a.losses, draws: a.draws,
+            win_pct: Math.round(a.wins / a.games * 1000) / 10,
             goals_for: a.goals_for, goals_against: a.goals_against,
             behinds_for: a.behinds_for,
             points_for: a.points_for, points_against: a.points_against,
@@ -1738,7 +1852,7 @@ async function runTeamSummary(season, team, matchType, limitVal) {
             avg_points_per_game: Math.round(a.points_for / a.games * 100) / 100
         };
     });
-    data.sort(function(a,b){ return b.points_for - a.points_for; });
+    data.sort(function(a,b){ return b.win_pct - a.win_pct || b.points_for - a.points_for; });
 
     if (team !== 'all') {
         data = data.filter(function(r){ return teamMatchesFilter(r.team, team); });
@@ -1746,11 +1860,13 @@ async function runTeamSummary(season, team, matchType, limitVal) {
     var limit = limitVal === 'all' ? data.length : parseInt(limitVal);
     data = data.slice(0, limit);
 
-    var title = season + ' Season Summary';
+    var seasonLabel = years.length === 1 ? String(years[0]) : years[0] + '\u2013' + years[years.length-1];
+    var title = seasonLabel + ' Season Summary';
     if (team !== 'all') title += ': ' + team;
     var qualifiers = [];
     if (matchType !== 'all') qualifiers.push(matchType === 'finals' ? 'Finals' : 'H&A');
     if (groundFilter) qualifiers.push('at ' + groundFilter);
+    if (stateFilter) qualifiers.push('in ' + stateFilter);
     if (qualifiers.length) title += ' (' + qualifiers.join(', ') + ')';
     title += ' (' + data.length + ' teams)';
 
